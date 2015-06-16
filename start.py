@@ -1,0 +1,54 @@
+from flask import Flask, render_template, url_for, jsonify
+import requests
+
+
+from machine import Machine
+
+app = Flask(__name__)
+
+
+# TODO: Add non-HTTP stuff and non-user-facing (e.g. nginx) stuff here
+MACHINES = [
+  Machine("modem", "192.168.100.1"),
+  Machine("router", "192.168.1.1"),
+  Machine("switch", "192.168.1.3"),
+  Machine("pfSense", "192.168.1.68"),
+  Machine("ownCloud", "192.168.1.71", ["/owncloud"]),
+  Machine("Proxmox", "192.168.1.73", [":8006"]),
+  Machine("Wiki", "192.168.1.76", ["/mediawiki/index.php/Special:UserLogin"]),
+  Machine("GOGS", "192.168.1.79", [":3000"])
+]
+
+
+@app.route("/")
+def hello():
+
+  to_show = []
+  for machine in MACHINES:
+    endpoint_statuses = []
+    for endpoint in machine.get_endpoints():
+      # Make a request and see if it's live
+      url = "http://" + machine.get_ip() + endpoint
+      print("about to request to " + url)
+      try:
+        status = requests.get(url).status_code
+      except BaseException as e:
+        status = e.message
+      endpoint_status = {
+        "url": url,
+        "status": status
+      }
+      endpoint_statuses.append(endpoint_status)
+
+    # Append
+    to_show.append({
+      "name": machine.get_name(),
+      "endpoints": endpoint_statuses
+    })
+  
+  # Render
+  return render_template("index.html", machines=to_show)
+
+
+if __name__ == "__main__":
+  app.run(debug=True, host="0.0.0.0")
