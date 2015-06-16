@@ -9,7 +9,7 @@
         <span class="name">{{ machine["name"] }}</span>
         {% for endpoint in machine["endpoints"] %}
           <br>
-          <a href="{{ endpoint["url"] }}" class="ip">{{ endpoint["url"] }}</a>
+          <a href="{{ endpoint["url"] }}" class="ip" target="_blank">{{ endpoint["url"] }}</a>
           <span class="endpoint_status">{{ endpoint["status"] }}</span>
         {% endfor %}
       </p>
