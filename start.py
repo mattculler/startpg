@@ -3,6 +3,7 @@ import requests
 
 
 from machine import Machine
+from service import Service
 
 app = Flask(__name__)
 
@@ -13,10 +14,18 @@ MACHINES = [
   Machine("router", "192.168.1.1"),
   Machine("switch", "192.168.1.3"),
   Machine("pfSense", "192.168.1.68"),
-  Machine("ownCloud", "192.168.1.71", ["/owncloud"]),
-  Machine("Proxmox", "192.168.1.73", [":8006"]),
-  Machine("Wiki", "192.168.1.76", ["/mediawiki/index.php/Special:UserLogin"]),
-  Machine("GOGS", "192.168.1.79", [":3000"])
+  Machine("ownCloud", "192.168.1.71", [
+    Service(url="/owncloud")
+  ]),
+  Machine("Proxmox", "192.168.1.73", [
+    Service(protocol="https", port="8006")
+  ]),
+  Machine("Wiki", "192.168.1.76", [
+    Service(url="/mediawiki/index.php/Special:UserLogin")
+  ]),
+  Machine("GOGS", "192.168.1.79", [
+    Service(port="3000")
+  ])
 ]
 
 
@@ -28,7 +37,7 @@ def hello():
     endpoint_statuses = []
     for endpoint in machine.get_endpoints():
       # Make a request and see if it's live
-      url = "http://" + machine.get_ip() + endpoint
+      url = "{0}://{1}:{2}{3}".format(endpoint.get_protocol(), machine.get_ip(), endpoint.get_port(), endpoint.get_url())
       print("about to request to " + url)
       try:
         status = requests.get(url).status_code
