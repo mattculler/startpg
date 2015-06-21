@@ -1,11 +1,11 @@
 """Defines a machine on the local net."""
 
-from service import Service
+from service import *
 
 class Machine(object):
 
 
-  DEFAULT_ENDPOINT_LIST = [Service()]
+  DEFAULT_ENDPOINT_LIST = [HttpService()]
 
 
   def __init__(self, name, ip, endpoint_list=DEFAULT_ENDPOINT_LIST):
