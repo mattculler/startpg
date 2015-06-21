@@ -52,7 +52,6 @@ def hello():
         print("about to request to " + url)
         try:
           if endpoint.requires_auth():
-            print(" > ", endpoint)
             status = requests.get(url, verify=False, auth=endpoint.get_auth()).status_code
           else:
             status = requests.get(url, verify=False).status_code
