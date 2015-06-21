@@ -3,7 +3,7 @@ import requests
 
 
 from machine import Machine
-from service import *
+from services import *
 
 app = Flask(__name__)
 
@@ -13,7 +13,9 @@ MACHINES = {
   "Internal Services": [
     Machine("modem", "192.168.100.1"),
     Machine("router", "192.168.1.1"),
-    Machine("switch", "192.168.1.3"),
+    Machine("switch", "192.168.1.3", [
+      HttpService(auth=("admin", "changeme"))
+    ]),
     Machine("pfSense", "192.168.1.68"),
     Machine("ownCloud", "192.168.1.71", [
       HttpService(url="/owncloud")
@@ -32,7 +34,7 @@ MACHINES = {
     Machine("site", "site.example.net"),
     Machine("Wiki", "wiki.example.org"),
     Machine("Owncloud", "cloud.example.com"),
-    Machine("Blog", "blog.example.com")
+    Machine("Blog", "www.blog.example.com")
   ]
 }
 
@@ -49,7 +51,11 @@ def hello():
         url = "{0}://{1}:{2}{3}".format(endpoint.get_protocol(), machine.get_ip(), endpoint.get_port(), endpoint.get_url())
         print("about to request to " + url)
         try:
-          status = requests.get(url).status_code
+          if endpoint.requires_auth():
+            print(" > ", endpoint)
+            status = requests.get(url, verify=False, auth=endpoint.get_auth()).status_code
+          else:
+            status = requests.get(url, verify=False).status_code
         except BaseException as e:
           status = e.message
         endpoint_status = {

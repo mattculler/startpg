@@ -1,6 +1,6 @@
 """Defines a machine on the local net."""
 
-from service import *
+from services import *
 
 class Machine(object):
 
