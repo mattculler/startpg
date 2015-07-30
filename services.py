@@ -1,7 +1,7 @@
 """Defines a service, meaning a use for a machine."""
 
 
-class Service(object):
+class AbstractService(object):
   """A generic service."""
 
   def __init__(self, port, service_name, protocol=None, url="/", auth=None):
@@ -42,22 +42,22 @@ class Service(object):
         self._auth)
 
 
-class HttpService(Service):
+class HttpService(AbstractService):
   """A generic HTTP service, running on port 80 at the root."""
 
   def __init__(self, port="80", url="/", auth=None):
-    Service.__init__(self, port, "http", protocol="http", url=url, auth=auth)
+    AbstractService.__init__(self, port, "http", protocol="http", url=url, auth=auth)
 
 
-class HttpsService(Service):
+class HttpsService(AbstractService):
   """A generic HTTPS service, running on port 443."""
 
   def __init__(self, port="443", url="/", auth=None):
-    Service.__init__(self, port, "https", protocol="https", url=url, auth=auth)
+    AbstractService.__init__(self, port, "https", protocol="https", url=url, auth=auth)
 
-class DelugeService(Service):
+class DelugeService(AbstractService):
   """A Deluge torrent daemon service."""
 
   def __init__(self, port="58846"):
     # Most of this does not apply to DelugeService
-    Service.__init__(self, port, "deluge", protocol=None, url=None, auth=None)
+    AbstractService.__init__(self, port, "deluge", protocol=None, url=None, auth=None)
