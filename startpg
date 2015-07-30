@@ -7,7 +7,7 @@ start_dir="/root/startpg"
 start_cmd="python start.py"
 
 is_running() {
-  ps aux|grep -v grep|grep -q $start_cmd
+  ps aux|grep -v grep|grep -q "$start_cmd"
 }
 
 get_pid() {
@@ -41,6 +41,7 @@ case $1 in
   ;;
   *)
     echo "usage: $me {start|stop|restart|status}"
+    exit 1
   ;;
 esac
 
