@@ -53,9 +53,9 @@ def hello():
         try:
           # These requests.get() calls use verify to ignore certificate issues
           if endpoint.requires_auth():
-            status = requests.get(url, verify=False, timeout=2, auth=endpoint.get_auth()).status_code
+            status = requests.get(url, verify=False, timeout=5, auth=endpoint.get_auth()).status_code
           else:
-            status = requests.get(url, verify=False, timeout=2).status_code
+            status = requests.get(url, verify=False, timeout=5).status_code
         except BaseException as e:
           status = e.message
         endpoint_status = {
