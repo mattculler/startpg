@@ -51,10 +51,11 @@ def hello():
         url = "{0}://{1}:{2}{3}".format(endpoint.get_protocol(), machine.get_ip(), endpoint.get_port(), endpoint.get_url())
         print("about to request to " + url)
         try:
+          # These requests.get() calls use verify to ignore certificate issues
           if endpoint.requires_auth():
-            status = requests.get(url, verify=False, auth=endpoint.get_auth()).status_code
+            status = requests.get(url, verify=False, timeout=2, auth=endpoint.get_auth()).status_code
           else:
-            status = requests.get(url, verify=False).status_code
+            status = requests.get(url, verify=False, timeout=2).status_code
         except BaseException as e:
           status = e.message
         endpoint_status = {
