@@ -12,6 +12,10 @@ class Machine(object):
     self._name = name
     self._ip = ip
     self._endpoint_list = endpoint_list
+
+    # Tell the endpoint what its IP is
+    for endpoint in self._endpoint_list:
+      endpoint.set_ip(self._ip)
       
 
   def get_endpoints(self):

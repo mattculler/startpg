@@ -23,12 +23,13 @@ MACHINES = {
     Machine("Proxmox", "192.168.1.73", [
       HttpsService(port="8006")
     ]),
-    Machine("Wiki", "192.168.1.76", [
-      HttpService(url="/mediawiki/index.php/Special:UserLogin")
-    ]),
+#    Machine("Wiki", "192.168.1.76", [
+#      HttpService(url="/mediawiki/index.php/Special:UserLogin")
+#    ]),
     Machine("GOGS", "192.168.1.79", [
       HttpService(port="3000")
-    ])
+    ]),
+    Machine("Deluge", "192.168.1.81")
   ],
   "External Services": [
     Machine("site", "site.example.net"),

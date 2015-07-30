@@ -4,6 +4,7 @@
 me=`basename $0`
 
 start_dir="/root/startpg"
+debug_dir="/home/mrc/code/startpg"
 start_cmd="python start.py"
 
 is_running() {
@@ -21,7 +22,15 @@ case $1 in
       echo "$me is already running!"
       exit 1
     fi
-    cd $start_dir
+    if ! cd $start_dir >/dev/null 2>&1
+    then
+      echo "starting debug session"
+      if ! cd $debug_dir >/dev/null 2>&1
+      then
+        echo "I have no idea where you are, this isn't going to work until you edit code dude"
+        exit 1
+      fi
+    fi
     $start_cmd >/var/log/startpg.log 2>&1 &
   ;;
   stop)
