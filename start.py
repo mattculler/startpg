@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from flask import Flask, render_template, url_for, jsonify
 import requests
+from collections import OrderedDict
 
 
 from machine import Machine
@@ -9,39 +10,39 @@ from services import *
 app = Flask(__name__)
 
 
-MACHINES = {
-  "Internal Services": [
-    Machine("modem", "192.168.100.1"),
-    Machine("pfsense", "192.168.1.1"),
-    Machine("SMC switch", "192.168.1.3", [
-      HttpService(auth=("admin", "changeme"))
-    ]),
-    Machine("Proxmox", "192.168.1.73", [
-      HttpsService(port="8006")
-    ]),
-    Machine("GOGS", "192.168.1.83", [
-      HttpService(port="3000")
-    ]),
-    Machine("Deluge", "192.168.1.84"),
-    # VM webservers
-    Machine("nginx", "192.168.1.81"),
-    Machine("site VM", "192.168.1.82", [
-      HttpService(port="5000")
-    ]),
-    Machine("Fund VM", "192.168.1.85", [
-      HttpService(port="8000")
-    ]),
-    # NOTE: Cannot include startpg itself, as this will always cause an infinite loop and time out!  Haha
-  ],
-  "OOB Management Interfaces": [
-    Machine("vault101", "192.168.1.20")
-  ],
-  "External Services": [
-    Machine("site", "site.example.net"),
-    Machine("Fund", "fund.example.org"),
-    Machine("Blog", "www.blog.example.com")
-  ]
-}
+MACHINES = OrderedDict()
+MACHINES["Internal Services"] = [
+  Machine("modem", "192.168.100.1"),
+  Machine("pfsense", "192.168.1.1"),
+  Machine("SMC switch", "192.168.1.3", [
+    HttpService(auth=("admin", "changeme"))
+  ]),
+  Machine("Proxmox", "192.168.1.73", [
+    HttpsService(port="8006")
+  ]),
+  Machine("GOGS", "192.168.1.83", [
+    HttpService(port="3000")
+  ]),
+  Machine("Deluge", "192.168.1.84"),
+  # VM webservers
+  Machine("nginx", "192.168.1.81"),
+  Machine("site VM", "192.168.1.82", [
+    HttpService(port="5000")
+  ]),
+  Machine("Fund VM", "192.168.1.85", [
+    HttpService(port="8000")
+  ]),
+  # NOTE: Cannot include startpg itself, as this will always cause an infinite loop and time out!  Haha
+]
+MACHINES["OOB Management Interfaces"] = [
+  Machine("vault101", "192.168.1.20")
+]
+MACHINES["External Services"] = [
+  Machine("site", "site.example.net"),
+  Machine("Fund", "fund.example.org"),
+  Machine("Blog", "www.blog.example.com")
+]
+
 
 # TODO: Add stuff that's ssh-only and add ssh support
 # (prisoner) - 192.168.1.69 (windows - no ssh)
