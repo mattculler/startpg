@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from flask import Flask, render_template, url_for, jsonify
 import requests
 
@@ -8,36 +9,47 @@ from services import *
 app = Flask(__name__)
 
 
-# TODO: Add non-HTTP stuff and non-user-facing (e.g. nginx) stuff here
 MACHINES = {
   "Internal Services": [
     Machine("modem", "192.168.100.1"),
-    Machine("router", "192.168.1.1"),
-    Machine("switch", "192.168.1.3", [
+    Machine("pfsense", "192.168.1.1"),
+    Machine("SMC switch", "192.168.1.3", [
       HttpService(auth=("admin", "changeme"))
-    ]),
-    Machine("pfSense", "192.168.1.68"),
-    Machine("ownCloud", "192.168.1.71", [
-      HttpService(url="/owncloud")
     ]),
     Machine("Proxmox", "192.168.1.73", [
       HttpsService(port="8006")
     ]),
-#    Machine("Wiki", "192.168.1.76", [
-#      HttpService(url="/mediawiki/index.php/Special:UserLogin")
-#    ]),
-    Machine("GOGS", "192.168.1.79", [
+    Machine("GOGS", "192.168.1.83", [
       HttpService(port="3000")
     ]),
-    Machine("Deluge", "192.168.1.81")
+    Machine("Deluge", "192.168.1.84"),
+    # VM webservers
+    Machine("nginx", "192.168.1.81"),
+    Machine("site VM", "192.168.1.82", [
+      HttpService(port="5000")
+    ]),
+    Machine("Fund VM", "192.168.1.85", [
+      HttpService(port="8000")
+    ]),
+    # NOTE: Cannot include startpg itself, as this will always cause an infinite loop and time out!  Haha
+  ],
+  "OOB Management Interfaces": [
+    Machine("vault101", "192.168.1.20")
   ],
   "External Services": [
     Machine("site", "site.example.net"),
-    Machine("Wiki", "wiki.example.org"),
-    Machine("Owncloud", "cloud.example.com"),
+    Machine("Fund", "fund.example.org"),
     Machine("Blog", "www.blog.example.com")
   ]
 }
+
+# TODO: Add stuff that's ssh-only and add ssh support
+# (prisoner) - 192.168.1.69 (windows - no ssh)
+# matryoshka - 192.168.1.70
+# vault101 - 192.168.1.127
+# svalbard - 192.168.1.128
+# steambox - 192.168.1.72
+# wmrc (raspberry pi radio) - 192.168.1.68
 
 
 @app.route("/")
@@ -57,8 +69,8 @@ def hello():
             status = requests.get(url, verify=False, timeout=5, auth=endpoint.get_auth()).status_code
           else:
             status = requests.get(url, verify=False, timeout=5).status_code
-        except BaseException as e:
-          status = e.message
+        except requests.exceptions.RequestException as e:
+          status = str(e)
         endpoint_status = {
           "full_url": url,
           "display_url": machine.get_ip(),

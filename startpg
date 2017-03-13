@@ -5,7 +5,7 @@ me=`basename $0`
 
 start_dir="/root/startpg"
 debug_dir="/home/mrc/code/startpg"
-start_cmd="python start.py"
+start_cmd="python3 start.py"
 
 is_running() {
   ps aux|grep -v grep|grep -q "$start_cmd"

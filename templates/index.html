@@ -4,7 +4,7 @@
     <title>Local Services</title>
   </head>
   <body>
-    {% for groupname, machines in machinegroups.iteritems() %}
+    {% for groupname, machines in machinegroups.items() %}
     <h1>{{ groupname }}</h1>
     {% for machine in machines %}
       <p>
