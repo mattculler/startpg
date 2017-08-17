@@ -24,7 +24,8 @@ MACHINES["Internal Services"] = [
     HttpService(port="3000")
   ]),
   Machine("Deluge", "192.168.1.84"),
-  # VM webservers
+  Machine("Zoneminder", "192.168.1.80"),
+  # VM websites
   Machine("nginx", "192.168.1.81"),
   Machine("site VM", "192.168.1.82", [
     HttpService(port="5000")
