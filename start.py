@@ -35,7 +35,8 @@ MACHINES["Internal Services"] = [
   # NOTE: Cannot include startpg itself, as this will always cause an infinite loop and time out!  Haha
 ]
 MACHINES["OOB Management Interfaces"] = [
-  Machine("vault101", "192.168.1.20")
+  Machine("vault101", "192.168.1.20"),
+  Machine("matryoshka", "192.168.1.19")
 ]
 MACHINES["External Services"] = [
   Machine("site", "site.example.net"),
@@ -51,6 +52,8 @@ MACHINES["External Services"] = [
 # svalbard - 192.168.1.128
 # steambox - 192.168.1.72
 # wmrc (raspberry pi radio) - 192.168.1.68
+
+# TODO: Add option to generate and download ssh_config from this???
 
 
 @app.route("/")
