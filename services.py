@@ -4,9 +4,17 @@
 class AbstractService(object):
   """A generic service."""
 
-  def __init__(self, port, service_name, protocol=None, url="/", auth=None):
+  def __init__(
+      self, 
+      port, 
+      service_name, 
+      description="", 
+      protocol=None, 
+      url="/", 
+      auth=None):
     self._port = port
     self._service_name = service_name
+    self._description = description
     self._protocol = protocol
     self._url = url
     self._auth = auth
@@ -14,6 +22,9 @@ class AbstractService(object):
   def set_ip(self, ip):
     """Called from the owning Machine to set the IP after instantiation."""
     self._ip = ip
+
+  def get_description(self):
+    return self._description
 
   def get_protocol(self):
     return self._protocol
@@ -45,19 +56,32 @@ class AbstractService(object):
 class HttpService(AbstractService):
   """A generic HTTP service, running on port 80 at the root."""
 
-  def __init__(self, port="80", url="/", auth=None):
-    AbstractService.__init__(self, port, "http", protocol="http", url=url, auth=auth)
+  def __init__(self, port="80", description="", url="/", auth=None):
+    AbstractService.__init__(
+        self, 
+        port, 
+        "http", 
+        description=description,
+        protocol="http", 
+        url=url, 
+        auth=auth)
 
 
 class HttpsService(AbstractService):
   """A generic HTTPS service, running on port 443."""
 
-  def __init__(self, port="443", url="/", auth=None):
-    AbstractService.__init__(self, port, "https", protocol="https", url=url, auth=auth)
+  def __init__(self, port="443", description="", url="/", auth=None):
+    AbstractService.__init__(
+        self, 
+        port, 
+        "https", 
+        description=description,
+        protocol="https", 
+        url=url, 
+        auth=auth)
 
 class DelugeService(AbstractService):
   """A Deluge torrent daemon service."""
 
   def __init__(self, port="58846"):
-    # Most of this does not apply to DelugeService
-    AbstractService.__init__(self, port, "deluge", protocol=None, url=None, auth=None)
+    AbstractService.__init__(self, port, "deluge", url=None)

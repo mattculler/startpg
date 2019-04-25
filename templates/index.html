@@ -4,15 +4,15 @@
     <title>Local Services</title>
   </head>
   <body>
-    {% for groupname, machines in machinegroups.items() %}
-    <h1>{{ groupname }}</h1>
-    {% for machine in machines %}
+    {% for machinegroup in machinegroups %}
+    <h1>{{ machinegroup[0] }}</h1>
+    {% for machine in machinegroup[1:] %}
       <p>
         <span class="name">{{ machine["name"] }}</span>
         {% for endpoint in machine["endpoints"] %}
           <br>
           <a href="{{ endpoint["full_url"] }}" class="ip" target="_blank">{{ endpoint["display_url"] }}</a>
-          <span class="endpoint_status">{{ endpoint["status"] }}</span>
+          <span class="endpoint_status">{{ endpoint["status"] | safe }}</span>
         {% endfor %}
       </p>
     {% endfor %}
