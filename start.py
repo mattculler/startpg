@@ -14,45 +14,63 @@ app = flask.Flask(__name__)
 # TODO: Add everything with a static IP and split up the internal services some more
 
 MACHINES = OrderedDict()
-MACHINES["Devices"] = [
+MACHINES["Hardware"] = [
   Machine("modem", "192.168.100.1", [
     HttpService(),
     # Spectrum analyzer - more info:
     # http://www.dslreports.com/forum/r31563033-Broadcom-Chip-Spectrum-Analyzer
     HttpService(port="8080", description="spectrum analyzer")
-  ], check_up=False),
-  Machine("opnsense", "192.168.1.1"),
+  ], check=False),
+  Machine("opnsense", "192.168.1.1", [
+    HttpService(),
+    SshService()
+  ]),
   Machine("Engenius bridge", "192.168.1.2", [
-    HttpService(auth=HttpBasicAuth("admin", "changeme"))
-  ]),
-  Machine("SMC switch", "192.168.1.3", [
-    HttpService(auth=HttpBasicAuth("admin", "changeme"))
-  ]),
-  Machine("TP-Link switch", "192.168.1.4"),
+    HttpService(),
+    SshService(description="super weird embedded thing")
+  ], auth=("admin", "changeme")),
+  Machine("SMC switch", "192.168.1.3", auth=("admin", "changeme")),
+  Machine("TP-Link switch", "192.168.1.4", auth=HttpWebAuth("admin", "changeme")),
+  Machine("Wifi AP", "192.168.1.5", [
+    HttpService(auth_type=HttpWebAuth),
+    SshService()
+  ], auth=("admin", "changeme")),
   Machine("Proxmox", "192.168.1.73", [
-    HttpsService(port="8006")
+    HttpsService(port="8006"),
+    SshService()
   ])
 ]
 MACHINES["VM Services"] = [
   Machine("Gitea git server", "192.168.1.83", [
-    HttpService(port="3000")
+    HttpService(port="3000"),
+    SshService()
   ]),
-  Machine("Deluge torrent server", "192.168.1.84")
+  Machine("Deluge torrent server", "192.168.1.84", [
+    HttpService(),
+    SshService()
+  ])
 ]
 MACHINES["VM Websites"] = [
   # VM websites
   Machine("site VM", "192.168.1.82", [
-    HttpService(port="5000")
+    HttpService(port="5000"),
+    SshService()
   ]),
   Machine("Fund VM", "192.168.1.85", [
-    HttpService(port="8000")
+    HttpService(port="8000"),
+    SshService()
   ])
-  # NOTE: Cannot include startpg itself here, as this will always cause an infinite
+  # TODO: Cannot include startpg itself here, as this will always cause an infinite
   #  loop and time out!  Haha.  Will have to rearchitect to do out of band up checking
   #  for this to work.
+  # TODO: How to include nginx when I have it set to drop connections not from given
+  #  source domains?
 ]
 MACHINES["OOB Management Interfaces"] = [
-  Machine("matryoshka", "192.168.1.20")
+  Machine("matryoshka", "192.168.1.20", [
+    HttpService(auth_type=HttpWebAuth),
+    SshService(description="another super weird one - not linux")
+  ], auth=("ADMIN", "changeme"))
   #Machine("svalbard", "192.168.1.?"),
   #Machine("vault101", "192.168.1.?")
 ]
@@ -82,7 +100,21 @@ MACHINES["External Services"] = [
 #   KexAlgorithms +diffie-hellman-group1-sha1
 
 
-def _get_status_html(status):
+def _get_status_html(status, tooltip="", color="", fontsize=""):
+  if tooltip:
+    tooltip = "title='" + tooltip + "'"
+  if color:
+    color = "color: " + color + ";"
+  if fontsize:
+    fontsize = "font-size: " + fontsize + ";"
+
+  style = ""
+  if color or fontsize:
+    style = "style='" + color + fontsize + "'"
+  return "<span " + style + " " + tooltip + ">" + status + "</span>"
+
+
+def _get_http_status_html(status):
   display = ""
   color = ""
   tooltip = ""
@@ -107,9 +139,62 @@ def _get_status_html(status):
     color = "red"
     tooltip = str(flask.escape(str(status)))
 
-  if tooltip:
-    tooltip = "title='" + tooltip + "'"
-  return "<span style='color:" + color + "' " + tooltip + ">" + display + "</span>"
+  return _get_status_html(display, tooltip=tooltip, color=color)
+
+
+def _check_http_endpoint(endpoint):
+  if (not issubclass(type(endpoint), HttpService) and 
+      not issubclass(type(endpoint), HttpsService)):
+    return False, ""
+
+  url = endpoint.get_fqdn(with_auth=False)
+  description = ""
+  if endpoint.description:
+    description = " (" + endpoint.description + ") "
+
+  if not endpoint.check:
+    return True, description
+
+  print("  making request to ", url)
+  try:
+    # These requests.get() calls use verify to ignore certificate issues
+    if endpoint.auth:
+      code = requests.get(
+          url, 
+          verify=False, 
+          timeout=5, 
+          auth=endpoint.auth.get_tuple()).status_code
+    else:
+      code = requests.get(url, verify=False, timeout=5).status_code
+
+    # Get some nice html and tell the user if the link will log in for them
+    status = _get_http_status_html(code)
+    if endpoint.auth:
+      # Add the key emoji
+      status = endpoint.auth.icon + description + status
+  except requests.exceptions.ConnectionError as e:
+    # The flask.escape function returns some kind of mutant string that corrupts any 
+    #  string it touches.  The explicit str over it is required!
+    status = description + _get_http_status_html(e)
+  except requests.exceptions.RequestException as e:
+    # Catch anything else, who the fuck knows
+    status = description + _get_http_status_html(e)
+  return True, status
+
+
+def _check_ssh_endpoint(endpoint):
+  # TODO: Implement actual checking
+  if not issubclass(type(endpoint), SshService):
+    return False, ""
+
+  description = "SSH"
+  if endpoint.description:
+    description += " - " + endpoint.description
+
+  tooltip = ""
+  if endpoint.auth:
+    tooltip = str(endpoint.auth)
+  return True, _get_status_html(description, tooltip=tooltip, fontsize="smaller")
 
 
 @app.route("/")
@@ -118,53 +203,37 @@ def hello():
   for group in MACHINES:
     to_show_group = [group]
     for machine in MACHINES[group]:
+      machine_checked = " "
+      if not machine.check:
+        machine_checked = _get_status_html("(not checked)", fontsize="smaller")
       to_show_machine = {
-        "name": machine.name,
-        "endpoints": []
+        "name": machine.name + machine_checked,
+        "endpoints": [],
+        "other": []
       }
+      print("checking machine", machine.name)
       for endpoint in machine.endpoints:
-        # Make a request and see if it's live
-        url = endpoint.get_fqdn(with_auth=False)
         status = "(not checked)"
+        if not machine.check:
+          # The not checked message will be displayed next to the machine rather than
+          #  it's endpoints
+          status = ""
         
-        print("making request for machine", machine.name, "to", url)
-        if machine.check_up:
-          try:
-            # These requests.get() calls use verify to ignore certificate issues
-            if endpoint.requires_auth():
-              code = requests.get(
-                  url, 
-                  verify=False, 
-                  timeout=5, 
-                  auth=endpoint.auth.get_tuple()).status_code
-            else:
-              code = requests.get(url, verify=False, timeout=5).status_code
+        # Make a request and see if it's live
+        for checker in {_check_http_endpoint, _check_ssh_endpoint}:
+          checked, newstatus = checker(endpoint)
+          if checked:
+            status = newstatus
+            break
 
-            # Get some nice html and tell the user if the link will log in for them
-            status = _get_status_html(code)
-            if endpoint.requires_auth():
-              # Add the key emoji
-              status = "&#x1F5DD;&#xFE0F; " + status
-          except requests.exceptions.ConnectionError as e:
-            # The flask.escape function returns some kind of mutant string that corrupts
-            #  any string it touches.  The explicit str over it is required!
-            status = _get_status_html(e)
-          except requests.exceptions.RequestException as e:
-            # Catch anything else, who the fuck knows
-            status = _get_status_html(e)
-
-        # Only show the description if there are multiple endpoints
-        if len(machine.endpoints) > 1:
-          description = endpoint.description
-          if description:
-            description = "(" + description + ")"
-          status = "{} {}".format(status, description)
-
-        to_show_machine["endpoints"].append({
-          "full_url": endpoint.get_fqdn(),
-          "display_url": machine.get_display_url(endpoint),
-          "status": status
-        })
+        if endpoint.show_url:
+          to_show_machine["endpoints"].append({
+            "full_url": endpoint.get_fqdn(),
+            "display_url": machine.get_display_url(endpoint),
+            "status": status
+          })
+        else:
+          to_show_machine["other"].append(status)
 
       # Append
       to_show_group.append(to_show_machine)

@@ -8,11 +8,15 @@
     <h1>{{ machinegroup[0] }}</h1>
     {% for machine in machinegroup[1:] %}
       <p>
-        <span class="name">{{ machine["name"] }}</span>
+        <span class="name">{{ machine["name"] | safe }}</span>
         {% for endpoint in machine["endpoints"] %}
           <br>
           <a href="{{ endpoint["full_url"] }}" class="ip" target="_blank">{{ endpoint["display_url"] }}</a>
           <span class="endpoint_status">{{ endpoint["status"] | safe }}</span>
+        {% endfor %}
+        {% for other in machine["other"] %}
+          <br>
+          <span>{{ other | safe }}</span>
         {% endfor %}
       </p>
     {% endfor %}

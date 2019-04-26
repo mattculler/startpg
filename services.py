@@ -15,7 +15,10 @@ class AbstractService(object):
       domain="",
       port="",
       path="/",
-      description=""):
+      description="",
+      auth_type=None,
+      show_url=True,
+      check=True):
     self._protocol = protocol
     self._auth = auth
     self._host = host
@@ -24,6 +27,9 @@ class AbstractService(object):
     self._path = path
 
     self._description = description
+    self._auth_type = auth_type
+    self._show_url = show_url
+    self._check = check
   
   @property
   def protocol(self):
@@ -32,6 +38,11 @@ class AbstractService(object):
   @property
   def auth(self):
     return self._auth
+
+  @auth.setter
+  def auth(self, auth):
+    if not self._auth:
+      self._auth = auth
 
   @property
   def host(self):
@@ -60,6 +71,28 @@ class AbstractService(object):
   def description(self):
     return self._description
 
+  @property
+  def auth_type(self):
+    return self._auth_type
+
+  @auth_type.setter
+  def auth_type(self, auth_type):
+    if not self._auth_type:
+      self._auth_type = auth_type
+
+  @property
+  def show_url(self):
+    return self._show_url
+
+  @property
+  def check(self):
+    return self._check
+
+  @check.setter
+  def check(self, check):
+    self._check = check
+
+
   def get_partially_qualified_domain_name(self, labels):
     """Returns the domain name with the specified labels."""
     pqdn = ""
@@ -87,9 +120,6 @@ class AbstractService(object):
         self.port,
         self.path)
 
-  def requires_auth(self):
-    return (self._auth != None)
-
   def __str__(self):
     return self._description + ": " + self.__repr__()
 
@@ -99,38 +129,32 @@ class AbstractService(object):
 
 class HttpService(AbstractService):
   """A generic HTTP service, by default running on port 80 at the root."""
-
-  def __init__(self, port="80", **kwargs):
+  def __init__(self, port="80", auth_type=HttpBasicAuth, **kwargs):
     AbstractService.__init__(
         self, 
         protocol="http", 
         port=port,
+        auth_type=auth_type,
         **kwargs)
-
 
 class HttpsService(AbstractService):
   """A generic HTTPS service, running on port 443."""
-
-  def __init__(self, port="443", **kwargs):
+  def __init__(self, port="443", auth_type=HttpBasicAuth, **kwargs):
     AbstractService.__init__(
         self, 
         protocol="https",
         port=port,
+        auth_type=auth_type,
         **kwargs)
 
-
-class DelugeService(AbstractService):
-  """A Deluge torrent daemon service."""
-
-  def __init__(
-      self, 
-      port="58846", 
-      protocol="http", 
-      description="deluge", 
-      **kwargs):
+class SshService(AbstractService):
+  """It's SSH, dawg."""
+  def __init__(self, port="22", auth_type=SshAuth, **kwargs):
     AbstractService.__init__(
-        self, 
-        port=port, 
-        protocol="http",
-        description=description,
+        self,
+        protocol="ssh",
+        port=port,
+        auth_type=auth_type,
+        show_url=False,
         **kwargs)
+  
