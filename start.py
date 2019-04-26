@@ -14,41 +14,53 @@ app = flask.Flask(__name__)
 # TODO: Add everything with a static IP and split up the internal services some more
 
 MACHINES = OrderedDict()
+MACHINES["Internal Services"] = [
+  Machine("Deluge torrent server", "192.168.1.84", [
+    HttpService(),
+    SshService()
+  ]),
+  Machine("Gitea git server", "192.168.1.83", [
+    HttpService(port="3000"),
+    SshService()
+  ])
+]
+MACHINES["External Services"] = [
+  Machine("Fund", "fund.example.org", [
+    HttpService(),
+    HttpService(host="www"),
+    HttpService(host="test")
+  ]),
+  Machine("site", "site.example.net"),
+  Machine("Blog", "blog.example.com", [
+    HttpService(),
+    HttpService(host="www")
+  ])
+]
 MACHINES["Hardware"] = [
+  Machine("opnsense", "192.168.1.1", [
+    HttpService(),
+    SshService()
+  ]),
+  Machine("Proxmox", "192.168.1.73", [
+    HttpsService(port="8006"),
+    SshService()
+  ]),
   Machine("modem", "192.168.100.1", [
     HttpService(),
     # Spectrum analyzer - more info:
     # http://www.dslreports.com/forum/r31563033-Broadcom-Chip-Spectrum-Analyzer
     HttpService(port="8080", description="spectrum analyzer")
   ], check=False),
-  Machine("opnsense", "192.168.1.1", [
-    HttpService(),
+  Machine("Wifi AP", "192.168.1.5", [
+    HttpService(auth_type=HttpWebAuth),
     SshService()
-  ]),
+  ], auth=("admin", "changeme")),
   Machine("Engenius bridge", "192.168.1.2", [
     HttpService(),
     SshService(description="super weird embedded thing")
   ], auth=("admin", "changeme")),
   Machine("SMC switch", "192.168.1.3", auth=("admin", "changeme")),
-  Machine("TP-Link switch", "192.168.1.4", auth=HttpWebAuth("admin", "changeme")),
-  Machine("Wifi AP", "192.168.1.5", [
-    HttpService(auth_type=HttpWebAuth),
-    SshService()
-  ], auth=("admin", "changeme")),
-  Machine("Proxmox", "192.168.1.73", [
-    HttpsService(port="8006"),
-    SshService()
-  ])
-]
-MACHINES["VM Services"] = [
-  Machine("Gitea git server", "192.168.1.83", [
-    HttpService(port="3000"),
-    SshService()
-  ]),
-  Machine("Deluge torrent server", "192.168.1.84", [
-    HttpService(),
-    SshService()
-  ])
+  Machine("TP-Link switch", "192.168.1.4", auth=HttpWebAuth("admin", "changeme"))
 ]
 MACHINES["VM Websites"] = [
   # VM websites
@@ -73,18 +85,6 @@ MACHINES["OOB Management Interfaces"] = [
   ], auth=("ADMIN", "changeme"))
   #Machine("svalbard", "192.168.1.?"),
   #Machine("vault101", "192.168.1.?")
-]
-MACHINES["External Services"] = [
-  Machine("site", "site.example.net"),
-  Machine("Fund", "fund.example.org", [
-    HttpService(),
-    HttpService(host="www"),
-    HttpService(host="test")
-  ]),
-  Machine("Blog", "blog.example.com", [
-    HttpService(),
-    HttpService(host="www")
-  ])
 ]
 
 # TODO: Try HTTP basic auth for some of these devices and add it if they work.  See if I
