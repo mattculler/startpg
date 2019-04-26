@@ -1,5 +1,6 @@
 """Defines a service, meaning a use for a machine."""
 
+from auths import *
 
 class AbstractService(object):
   """A generic service."""
@@ -19,24 +20,46 @@ class AbstractService(object):
     self._url = url
     self._auth = auth
 
-  def set_ip(self, ip):
+    self._ip = None
+
+  @property
+  def ip(self):
+    return self._ip
+
+  @ip.setter
+  def ip(self, ip):
     """Called from the owning Machine to set the IP after instantiation."""
     self._ip = ip
 
-  def get_description(self):
+  @property
+  def description(self):
     return self._description
 
-  def get_protocol(self):
+  @property
+  def protocol(self):
     return self._protocol
 
-  def get_port(self):
+  @property
+  def port(self):
     return self._port
 
-  def get_url(self):
+  @property
+  def url(self):
     return self._url
 
-  def get_auth(self):
+  @property
+  def auth(self):
     return self._auth
+
+  def get_full_url(self, with_auth=True):
+    return "{}://{}{}:{}{}".format(
+        self._protocol, 
+        (self._auth.get_url_prefix()
+          if type(self._auth) == HttpBasicAuth and with_auth 
+          else ""),
+        self._ip,
+        self._port,
+        self._url)
 
   def requires_auth(self):
     return (self._auth != None)
@@ -45,12 +68,7 @@ class AbstractService(object):
     return self.__repr__()
 
   def __repr__(self):
-    return "{0}://{1}{2}:{3} {4}".format(
-        self._protocol, 
-        self._ip,
-        self._url, 
-        self._port, 
-        self._auth)
+    return self.get_full_url()
 
 
 class HttpService(AbstractService):

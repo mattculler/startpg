@@ -4,19 +4,18 @@ from services import *
 
 class Machine(object):
 
-
-  DEFAULT_ENDPOINT_LIST = [HttpService()]
-
-
-  def __init__(self, name, ip, endpoint_list=DEFAULT_ENDPOINT_LIST, check_up=True):
+  def __init__(self, name, ip, endpoint_list=None, check_up=True):
     self._name = name
     self._ip = ip
-    self._endpoint_list = endpoint_list
+    if endpoint_list:
+      self._endpoint_list = endpoint_list
+    else:
+      self._endpoint_list = [HttpService()]
     self._check_up = check_up
 
     # Tell the endpoint what its IP is
     for endpoint in self._endpoint_list:
-      endpoint.set_ip(self._ip)
+      endpoint.ip = self._ip
       
   @property
   def endpoint_list(self):
@@ -33,4 +32,4 @@ class Machine(object):
   @property
   def check_up(self):
     return self._check_up
-
+  

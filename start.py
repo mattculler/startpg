@@ -1,14 +1,17 @@
 #!/usr/bin/python3
-from flask import Flask, render_template, url_for, jsonify
+import flask
 import requests
 from collections import OrderedDict
 
 
 from machine import Machine
 from services import *
+from auths import *
 
-app = Flask(__name__)
+app = flask.Flask(__name__)
 
+
+# TODO: Add everything with a static IP and split up the internal services some more
 
 MACHINES = OrderedDict()
 MACHINES["Internal Services"] = [
@@ -19,9 +22,13 @@ MACHINES["Internal Services"] = [
     HttpService(port="8080", description="spectrum analyzer")
   ], check_up=False),
   Machine("opnsense", "192.168.1.1"),
-  Machine("SMC switch", "192.168.1.3", [
-    HttpService(auth=("admin", "changeme"))
+  Machine("Engenius bridge", "192.168.1.2", [
+    HttpService(auth=HttpBasicAuth("admin", "changeme"))
   ]),
+  Machine("SMC switch", "192.168.1.3", [
+    HttpService(auth=HttpBasicAuth("admin", "changeme"))
+  ]),
+  Machine("TP-Link switch", "192.168.1.4"),
   Machine("Proxmox", "192.168.1.73", [
     HttpsService(port="8006")
   ]),
@@ -36,12 +43,13 @@ MACHINES["Internal Services"] = [
   ]),
   Machine("Fund VM", "192.168.1.85", [
     HttpService(port="8000")
-  ]),
+  ])
   # NOTE: Cannot include startpg itself, as this will always cause an infinite loop and time out!  Haha
 ]
 MACHINES["OOB Management Interfaces"] = [
-  Machine("vault101", "192.168.1.20"),
-  Machine("matryoshka", "192.168.1.19")
+  Machine("matryoshka", "192.168.1.20")
+  #Machine("svalbard", "192.168.1.?"),
+  #Machine("vault101", "192.168.1.?")
 ]
 MACHINES["External Services"] = [
   Machine("site", "site.example.net"),
@@ -49,6 +57,8 @@ MACHINES["External Services"] = [
   Machine("Blog", "www.blog.example.com")
 ]
 
+# TODO: Try HTTP basic auth for some of these devices and add it if they work.  See if I
+#  can implement other auth methods
 
 # TODO: Add stuff that's ssh-only and add ssh support
 
@@ -62,7 +72,6 @@ MACHINES["External Services"] = [
 
 @app.route("/")
 def hello():
-
   to_show = []
   for group in MACHINES:
     to_show_group = [group]
@@ -73,34 +82,57 @@ def hello():
       }
       for endpoint in machine.endpoint_list:
         # Make a request and see if it's live
-        url = "{0}://{1}:{2}{3}".format(endpoint.get_protocol(), machine.ip, endpoint.get_port(), endpoint.get_url())
-        print("about to request to " + url)
-        if not machine.check_up:
-          status = "(not checked)"
-        else:
+        url = endpoint.get_full_url(with_auth=False)
+        status = "(not checked)"
+        
+        print("making request for machine", machine.name, "to", url)
+        if machine.check_up:
           try:
             # These requests.get() calls use verify to ignore certificate issues
             if endpoint.requires_auth():
-              status = requests.get(url, verify=False, timeout=5, auth=endpoint.get_auth()).status_code
+              status = requests.get(
+                  url, 
+                  verify=False, 
+                  timeout=5, 
+                  auth=endpoint.auth.get_tuple()).status_code
             else:
               status = requests.get(url, verify=False, timeout=5).status_code
+            status = str(status)
+
+            # Make it yell if error
+            if len(status) == 3:
+              if status[0] != "2":
+                # HTTP error code
+                status = "<span style='color: red;'>" + status + "</span>"
+              else:
+                status = "<span style='color: green;'>" + status + "</span>"
+
+            # Tell the user if their link will log in for them
+            if endpoint.requires_auth():
+              status = "&#x1F5DD;&#xFE0F; " + status
           except requests.exceptions.ConnectionError as e:
-            status = "<span style='color:red;'>Server seems to be down!</span>"
+            # The flask.escape function returns some kind of mutant string that corrupts
+            #  any string it touches.  The explicit str over it is required!
+            status = (
+                "<span style='color:red;' title='" + str(flask.escape(str(e))) + "'>"
+                "  Server seems to be down!"
+                "</span>")
           except requests.exceptions.RequestException as e:
-            # Catch anything else
+            # Catch anything else, who the fuck knows
             status = str(e)
+        print("  status:", status)
 
         # Only show the full URL and description if there are multiple endpoints
         display_url = machine.ip
         if len(machine.endpoint_list) > 1:
           display_url = url
-          description = endpoint.get_description()
+          description = endpoint.description
           if description:
             description = "(" + description + ")"
           status = "{} {}".format(status, description)
 
         to_show_machine["endpoints"].append({
-          "full_url": url,
+          "full_url": endpoint.get_full_url(),
           "display_url": display_url,
           "status": status
         })
@@ -108,10 +140,8 @@ def hello():
       # Append
       to_show_group.append(to_show_machine)
     to_show.append(to_show_group)   
-  import json
-  print(json.dumps(to_show, indent=2))
   # Render
-  return render_template("index.html", machinegroups=to_show)
+  return flask.render_template("index.html", machinegroups=to_show)
 
 
 if __name__ == "__main__":
