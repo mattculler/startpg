@@ -2,7 +2,7 @@
 import flask
 import requests
 from collections import OrderedDict
-
+import re
 
 from machine import Machine
 from services import *
@@ -14,7 +14,7 @@ app = flask.Flask(__name__)
 # TODO: Add everything with a static IP and split up the internal services some more
 
 MACHINES = OrderedDict()
-MACHINES["Internal Services"] = [
+MACHINES["Devices"] = [
   Machine("modem", "192.168.100.1", [
     HttpService(),
     # Spectrum analyzer - more info:
@@ -31,12 +31,15 @@ MACHINES["Internal Services"] = [
   Machine("TP-Link switch", "192.168.1.4"),
   Machine("Proxmox", "192.168.1.73", [
     HttpsService(port="8006")
-  ]),
-  Machine("Gitea SCM", "192.168.1.83", [
+  ])
+]
+MACHINES["VM Services"] = [
+  Machine("Gitea git server", "192.168.1.83", [
     HttpService(port="3000")
   ]),
-  Machine("Deluge", "192.168.1.84"),
-  #Machine("Zoneminder", "192.168.1.80"), # doesn't work great as a VM
+  Machine("Deluge torrent server", "192.168.1.84")
+]
+MACHINES["VM Websites"] = [
   # VM websites
   Machine("site VM", "192.168.1.82", [
     HttpService(port="5000")
@@ -44,7 +47,9 @@ MACHINES["Internal Services"] = [
   Machine("Fund VM", "192.168.1.85", [
     HttpService(port="8000")
   ])
-  # NOTE: Cannot include startpg itself, as this will always cause an infinite loop and time out!  Haha
+  # NOTE: Cannot include startpg itself here, as this will always cause an infinite
+  #  loop and time out!  Haha.  Will have to rearchitect to do out of band up checking
+  #  for this to work.
 ]
 MACHINES["OOB Management Interfaces"] = [
   Machine("matryoshka", "192.168.1.20")
@@ -53,8 +58,15 @@ MACHINES["OOB Management Interfaces"] = [
 ]
 MACHINES["External Services"] = [
   Machine("site", "site.example.net"),
-  Machine("Fund", "fund.example.org"),
-  Machine("Blog", "www.blog.example.com")
+  Machine("Fund", "fund.example.org", [
+    HttpService(),
+    HttpService(host="www"),
+    HttpService(host="test")
+  ]),
+  Machine("Blog", "blog.example.com", [
+    HttpService(),
+    HttpService(host="www")
+  ])
 ]
 
 # TODO: Try HTTP basic auth for some of these devices and add it if they work.  See if I
@@ -70,6 +82,36 @@ MACHINES["External Services"] = [
 #   KexAlgorithms +diffie-hellman-group1-sha1
 
 
+def _get_status_html(status):
+  display = ""
+  color = ""
+  tooltip = ""
+  if type(status) == int:
+    display = str(status)
+    
+    if status // 100 != 2:
+      # 2xx - HTTP error code
+      color = "red"
+    else:
+      color = "green"
+    
+    # This fun line just takes a status string like "internal_server_error" and turns
+    #  it nicer, like "Internal Server Error"
+    tooltip = re.sub(
+        r"\b([a-z])", 
+        lambda match: match.group(1).upper(), 
+        requests.status_codes._codes[status][0].replace("_", " "))
+  else:
+    # Something else bad, probably an exception.  String it, hard
+    display = "Could not connect!"
+    color = "red"
+    tooltip = str(flask.escape(str(status)))
+
+  if tooltip:
+    tooltip = "title='" + tooltip + "'"
+  return "<span style='color:" + color + "' " + tooltip + ">" + display + "</span>"
+
+
 @app.route("/")
 def hello():
   to_show = []
@@ -80,9 +122,9 @@ def hello():
         "name": machine.name,
         "endpoints": []
       }
-      for endpoint in machine.endpoint_list:
+      for endpoint in machine.endpoints:
         # Make a request and see if it's live
-        url = endpoint.get_full_url(with_auth=False)
+        url = endpoint.get_fqdn(with_auth=False)
         status = "(not checked)"
         
         print("making request for machine", machine.name, "to", url)
@@ -90,50 +132,37 @@ def hello():
           try:
             # These requests.get() calls use verify to ignore certificate issues
             if endpoint.requires_auth():
-              status = requests.get(
+              code = requests.get(
                   url, 
                   verify=False, 
                   timeout=5, 
                   auth=endpoint.auth.get_tuple()).status_code
             else:
-              status = requests.get(url, verify=False, timeout=5).status_code
-            status = str(status)
+              code = requests.get(url, verify=False, timeout=5).status_code
 
-            # Make it yell if error
-            if len(status) == 3:
-              if status[0] != "2":
-                # HTTP error code
-                status = "<span style='color: red;'>" + status + "</span>"
-              else:
-                status = "<span style='color: green;'>" + status + "</span>"
-
-            # Tell the user if their link will log in for them
+            # Get some nice html and tell the user if the link will log in for them
+            status = _get_status_html(code)
             if endpoint.requires_auth():
+              # Add the key emoji
               status = "&#x1F5DD;&#xFE0F; " + status
           except requests.exceptions.ConnectionError as e:
             # The flask.escape function returns some kind of mutant string that corrupts
             #  any string it touches.  The explicit str over it is required!
-            status = (
-                "<span style='color:red;' title='" + str(flask.escape(str(e))) + "'>"
-                "  Server seems to be down!"
-                "</span>")
+            status = _get_status_html(e)
           except requests.exceptions.RequestException as e:
             # Catch anything else, who the fuck knows
-            status = str(e)
-        print("  status:", status)
+            status = _get_status_html(e)
 
-        # Only show the full URL and description if there are multiple endpoints
-        display_url = machine.ip
-        if len(machine.endpoint_list) > 1:
-          display_url = url
+        # Only show the description if there are multiple endpoints
+        if len(machine.endpoints) > 1:
           description = endpoint.description
           if description:
             description = "(" + description + ")"
           status = "{} {}".format(status, description)
 
         to_show_machine["endpoints"].append({
-          "full_url": endpoint.get_full_url(),
-          "display_url": display_url,
+          "full_url": endpoint.get_fqdn(),
+          "display_url": machine.get_display_url(endpoint),
           "status": status
         })
 

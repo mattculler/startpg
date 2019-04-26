@@ -15,5 +15,8 @@ class HttpBasicAuth(object):
   def get_tuple(self):
     return (self._username, self._password)
 
-  def get_url_prefix(self):
+  def get_url_userinfo(self):
     return "{}:{}@".format(self._username, self._password)
+
+  def __str__(self):
+    return self.get_url_userinfo()

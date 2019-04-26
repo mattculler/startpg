@@ -1,35 +1,57 @@
-"""Defines a machine on the local net."""
+import copy
 
 from services import *
 
 class Machine(object):
 
-  def __init__(self, name, ip, endpoint_list=None, check_up=True):
+  def __init__(self, name, domain, endpoints=None, check_up=True):
     self._name = name
-    self._ip = ip
-    if endpoint_list:
-      self._endpoint_list = endpoint_list
+    if endpoints:
+      self._endpoints = endpoints
     else:
-      self._endpoint_list = [HttpService()]
+      self._endpoints = [HttpService()]
     self._check_up = check_up
 
-    # Tell the endpoint what its IP is
-    for endpoint in self._endpoint_list:
-      endpoint.ip = self._ip
+    # Tell the endpoint what its domain is.  If domain is not set here in machine, it must be
+    #  set on all the endpoints individually.
+    self._domain = domain
+    for endpoint in self._endpoints:
+      endpoint.domain = self._domain
       
-  @property
-  def endpoint_list(self):
-    return self._endpoint_list
-
   @property
   def name(self):
     return self._name
 
   @property
-  def ip(self):
-    return self._ip
+  def domain(self):
+    return self._domain
+
+  @property
+  def endpoints(self):
+    return self._endpoints
   
   @property
   def check_up(self):
     return self._check_up
-  
+
+  def get_display_url(self, endpoint):
+    """For a given endpoint, returns the simplest unique URL over all endpoints."""
+    if endpoint not in self._endpoints:
+      raise Exception("Passed in endpoint from a different machine, jackass")
+    if len(self._endpoints) == 1:
+      # Simplest case
+      return endpoint.domain
+
+    # If a label is different than any other in the list, show it.  Always include domain
+    include_labels = {"domain"}
+    for label in ["protocol", "auth", "host", "port", "path"]:
+      for other_endpoint in self._endpoints:
+        if endpoint == other_endpoint:
+          continue
+        if getattr(endpoint, label) != getattr(other_endpoint, label):
+          include_labels.add(label)
+          continue
+
+    return endpoint.get_partially_qualified_domain_name(include_labels)
+
+    
