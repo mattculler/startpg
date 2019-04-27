@@ -5,14 +5,19 @@ from auths import *
 
 class Machine(object):
 
-  def __init__(self, name, domain, endpoints=None, check=True, auth=None):
+  def __init__(self, name, domain, endpoints=None, check=None, auth=None):
     self._name = name
     self._domain = domain
+    
     if endpoints:
       self._endpoints = endpoints
     else:
       self._endpoints = [HttpService()]
-    self._check = check
+
+    if check is None:
+      self._check = True
+    else:
+      self._check = check
 
     for endpoint in self._endpoints:
       # Tell the endpoint what its domain is.  If domain is not set here in machine, it must be

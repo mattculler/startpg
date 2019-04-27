@@ -90,7 +90,11 @@ class AbstractService(object):
 
   @check.setter
   def check(self, check):
-    self._check = check
+    # A non-default check setting on the machine filters down to all endpoints
+    # NOTE: This will be a source of bugs when defaults change
+    if check is not None:
+      print("doing different check for endpoint", str(self), check)
+      self._check = check
 
 
   def get_partially_qualified_domain_name(self, labels):

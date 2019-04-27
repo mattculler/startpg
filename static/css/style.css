@@ -1,0 +1,26 @@
+/* TODO: Looks fucking awesome on mobile, but needs to do a card-style
+ * overflow into left-to-right columns when the display is wide enough. */
+
+.machinegroupname {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.machinegroup {
+  background: rosybrown;
+  padding: 5px;
+  margin: 5px;
+}
+
+.machine {
+  background: tan;
+  margin: 10px;
+  padding: 15px;
+}
+
+.machinename {
+  font-style: italic;
+  font-size: larger; 
+}
+
+

@@ -28,9 +28,12 @@ MACHINES["External Services"] = [
   Machine("Fund", "fund.example.org", [
     HttpService(),
     HttpService(host="www"),
-    HttpService(host="test")
+    HttpService(host="test", check=False)
   ]),
-  Machine("site", "site.example.net"),
+  Machine("site", "site.example.net", [
+    HttpService(),
+    HttpService(host="www")
+  ]),
   Machine("Blog", "blog.example.com", [
     HttpService(),
     HttpService(host="www")
@@ -65,7 +68,7 @@ MACHINES["Hardware"] = [
 MACHINES["VM Websites"] = [
   # VM websites
   Machine("site VM", "192.168.1.82", [
-    HttpService(port="5000"),
+    HttpService(),
     SshService()
   ]),
   Machine("Fund VM", "192.168.1.85", [
@@ -78,7 +81,7 @@ MACHINES["VM Websites"] = [
   # TODO: How to include nginx when I have it set to drop connections not from given
   #  source domains?
 ]
-MACHINES["OOB Management Interfaces"] = [
+MACHINES["OOB Management"] = [
   Machine("matryoshka", "192.168.1.20", [
     HttpService(auth_type=HttpWebAuth),
     SshService(description="another super weird one - not linux")
@@ -99,6 +102,10 @@ MACHINES["OOB Management Interfaces"] = [
 #   #Password changeme
 #   KexAlgorithms +diffie-hellman-group1-sha1
 
+# TODO: Add login links for trackers?
+
+# TODO: Style!
+
 
 def _get_status_html(status, tooltip="", color="", fontsize=""):
   if tooltip:
@@ -112,6 +119,9 @@ def _get_status_html(status, tooltip="", color="", fontsize=""):
   if color or fontsize:
     style = "style='" + color + fontsize + "'"
   return "<span " + style + " " + tooltip + ">" + status + "</span>"
+
+
+NOT_CHECKED = _get_status_html("(not checked)", fontsize="smaller")
 
 
 def _get_http_status_html(status):
@@ -142,7 +152,7 @@ def _get_http_status_html(status):
   return _get_status_html(display, tooltip=tooltip, color=color)
 
 
-def _check_http_endpoint(endpoint):
+def _check_http_endpoint(endpoint, machine):
   if (not issubclass(type(endpoint), HttpService) and 
       not issubclass(type(endpoint), HttpsService)):
     return False, ""
@@ -152,37 +162,40 @@ def _check_http_endpoint(endpoint):
   if endpoint.description:
     description = " (" + endpoint.description + ") "
 
-  if not endpoint.check:
-    return True, description
+  if not machine.check:
+    status = ""
+  elif not endpoint.check:
+    print("  not checking", url)
+    status = NOT_CHECKED
+  else:
+    print("  making request to", url)
+    try:
+      # These requests.get() calls use verify to ignore certificate issues
+      if endpoint.auth:
+        code = requests.get(
+            url, 
+            verify=False, 
+            timeout=5, 
+            auth=endpoint.auth.get_tuple()).status_code
+      else:
+        code = requests.get(url, verify=False, timeout=5).status_code
 
-  print("  making request to ", url)
-  try:
-    # These requests.get() calls use verify to ignore certificate issues
-    if endpoint.auth:
-      code = requests.get(
-          url, 
-          verify=False, 
-          timeout=5, 
-          auth=endpoint.auth.get_tuple()).status_code
-    else:
-      code = requests.get(url, verify=False, timeout=5).status_code
-
-    # Get some nice html and tell the user if the link will log in for them
-    status = _get_http_status_html(code)
-    if endpoint.auth:
-      # Add the key emoji
-      status = endpoint.auth.icon + description + status
-  except requests.exceptions.ConnectionError as e:
-    # The flask.escape function returns some kind of mutant string that corrupts any 
-    #  string it touches.  The explicit str over it is required!
-    status = description + _get_http_status_html(e)
-  except requests.exceptions.RequestException as e:
-    # Catch anything else, who the fuck knows
-    status = description + _get_http_status_html(e)
+      # Get some nice html and tell the user if the link will log in for them
+      status = _get_http_status_html(code)
+    except requests.exceptions.ConnectionError as e:
+      # The flask.escape function returns some kind of mutant string that corrupts any 
+      #  string it touches.  The explicit str over it is required!
+      status = _get_http_status_html(e)
+    except requests.exceptions.RequestException as e:
+      # Catch anything else, who the fuck knows
+      status = _get_http_status_html(e)
+  if endpoint.auth:
+    # Add any auth emoji
+    status = endpoint.auth.icon + description + status
   return True, status
 
 
-def _check_ssh_endpoint(endpoint):
+def _check_ssh_endpoint(endpoint, machine):
   # TODO: Implement actual checking
   if not issubclass(type(endpoint), SshService):
     return False, ""
@@ -203,17 +216,19 @@ def hello():
   for group in MACHINES:
     to_show_group = [group]
     for machine in MACHINES[group]:
+      print("dealing with machine", machine.name)
       machine_checked = " "
       if not machine.check:
-        machine_checked = _get_status_html("(not checked)", fontsize="smaller")
+        print("  not checking any endpoint")
+        machine_checked = NOT_CHECKED
       to_show_machine = {
-        "name": machine.name + machine_checked,
+        "name": machine.name,
+        "status": machine_checked,
         "endpoints": [],
         "other": []
       }
-      print("checking machine", machine.name)
       for endpoint in machine.endpoints:
-        status = "(not checked)"
+        status = NOT_CHECKED
         if not machine.check:
           # The not checked message will be displayed next to the machine rather than
           #  it's endpoints
@@ -221,7 +236,7 @@ def hello():
         
         # Make a request and see if it's live
         for checker in {_check_http_endpoint, _check_ssh_endpoint}:
-          checked, newstatus = checker(endpoint)
+          checked, newstatus = checker(endpoint, machine)
           if checked:
             status = newstatus
             break
