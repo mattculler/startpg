@@ -1,6 +1,11 @@
 /* TODO: Looks fucking awesome on mobile, but needs to do a card-style
  * overflow into left-to-right columns when the display is wide enough. */
 
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
 .machinegroupname {
   margin-bottom: 0;
   padding-bottom: 0;
