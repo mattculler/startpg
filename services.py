@@ -93,7 +93,6 @@ class AbstractService(object):
     # A non-default check setting on the machine filters down to all endpoints
     # NOTE: This will be a source of bugs when defaults change
     if check is not None:
-      print("doing different check for endpoint", str(self), check)
       self._check = check
 
 

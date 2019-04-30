@@ -42,6 +42,7 @@ MACHINES["External Services"] = [
 MACHINES["Hardware"] = [
   Machine("opnsense", "192.168.1.1", [
     HttpService(),
+    HttpsService(),
     SshService()
   ]),
   Machine("Proxmox", "192.168.1.73", [
@@ -58,6 +59,10 @@ MACHINES["Hardware"] = [
     HttpService(auth_type=HttpWebAuth),
     SshService()
   ], auth=("admin", "changeme")),
+  Machine("Hassio", "192.168.1.67", [
+    HttpService(port="8123"),
+    SshService()
+  ]),
   Machine("Engenius bridge", "192.168.1.2", [
     HttpService(),
     SshService(description="super weird embedded thing")
