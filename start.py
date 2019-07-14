@@ -23,8 +23,9 @@ MACHINES["Internal Services"] = [
     HttpService(port="3000"),
     SshService()
   ])
+  # TODO: Finish, configure, install, and add shitathome services
 ]
-MACHINES["External Services"] = [
+MACHINES["External Websites"] = [
   Machine("Fund", "fund.example.org", [
     HttpService(),
     HttpService(host="www"),
@@ -39,14 +40,36 @@ MACHINES["External Services"] = [
     HttpService(host="www")
   ])
 ]
-MACHINES["Hardware"] = [
+MACHINES["Proxmox Boxes"] = [
+  Machine("Warchest", "192.168.1.74", [
+    HttpsService(port="8006"),
+    SshService()
+  ]),
+  Machine("Toolchest", "192.168.1.75", [
+    HttpsService(port="8006"),
+    SshService()
+  ]),
+  # TODO: Or is it toychest?
+  Machine("Toybox", "192.168.1.73", [
+    HttpsService(port="8006"),
+    SshService()
+  ])
+]
+MACHINES["Smart Home"] = [
+  Machine("Hassio", "192.168.1.67", [
+    HttpService(port="8123"),
+    SshService()
+  ])
+  # TODO: Airlockc ...?
+]
+MACHINES["Networking Appliances"] = [
   Machine("opnsense", "192.168.1.1", [
     HttpService(),
     HttpsService(),
     SshService()
   ]),
-  Machine("Proxmox", "192.168.1.73", [
-    HttpsService(port="8006"),
+  Machine("piholea", "192.168.1.11", [
+    HttpService(path="/admin"),
     SshService()
   ]),
   Machine("modem", "192.168.100.1", [
@@ -59,16 +82,15 @@ MACHINES["Hardware"] = [
     HttpService(auth_type=HttpWebAuth),
     SshService()
   ], auth=("admin", "changeme")),
-  Machine("Hassio", "192.168.1.67", [
-    HttpService(port="8123"),
-    SshService()
-  ]),
+  Machine("10Gb switch", "192.168.1.7", auth=("admin", "changeme")),
+  Machine("TP-Link switch", "192.168.1.4", auth=("admin", "changeme")),
   Machine("Engenius bridge", "192.168.1.2", [
     HttpService(),
     SshService(description="super weird embedded thing")
-  ], auth=("admin", "changeme")),
-  Machine("SMC switch", "192.168.1.3", auth=("admin", "changeme")),
-  Machine("TP-Link switch", "192.168.1.4", auth=HttpWebAuth("admin", "changeme"))
+  ], auth=("admin", "changeme"))
+  # TODO: Configure and add new smart switch with 10g uplink!
+  # TODO: Configure and add piholes!
+  #Machine("SMC switch", "192.168.1.3", auth=("admin", "changeme")),
 ]
 MACHINES["VM Websites"] = [
   # VM websites
@@ -93,6 +115,7 @@ MACHINES["OOB Management"] = [
   ], auth=("ADMIN", "changeme"))
   #Machine("svalbard", "192.168.1.?"),
   #Machine("vault101", "192.168.1.?")
+  #toybox, warchest, toolchest
 ]
 
 # TODO: Try HTTP basic auth for some of these devices and add it if they work.  See if I
@@ -109,7 +132,7 @@ MACHINES["OOB Management"] = [
 
 # TODO: Add login links for trackers?
 
-# TODO: Style!
+# TODO: Style!  Card-style layout
 
 
 def _get_status_html(status, tooltip="", color="", fontsize=""):
