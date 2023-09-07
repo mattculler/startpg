@@ -15,15 +15,29 @@ app = flask.Flask(__name__)
 
 MACHINES = OrderedDict()
 MACHINES["Internal Services"] = [
-  Machine("Deluge torrent server", "192.168.1.84", [
+  Machine("Deluge torrent VM", "192.168.1.84", [
     HttpService(),
     SshService()
   ]),
-  Machine("Gitea git server", "192.168.1.83", [
-    HttpService(port="3000"),
+  Machine("Gitea git VM", "192.168.1.83", [
+    HttpService(),
+    HttpService(port="3000", check=False),
     SshService()
   ])
-  # TODO: Finish, configure, install, and add shitathome services
+]
+MACHINES["Servers"] = [
+  Machine("Proxmox Unibox", "192.168.1.75", [
+    HttpsService(port="8006"),
+    SshService()
+  ]),
+  Machine("Warchest (convert to portainer box)", "192.168.1.74", [
+    HttpsService(check=False),
+    SshService()
+  ]),
+  Machine("Hassio", "192.168.1.67", [
+    HttpService(port="8123"),
+    SshService()
+  ])
 ]
 MACHINES["External Websites"] = [
   Machine("Fund", "fund.example.org", [
@@ -39,28 +53,6 @@ MACHINES["External Websites"] = [
     HttpService(),
     HttpService(host="www")
   ])
-]
-MACHINES["Proxmox Boxes"] = [
-  Machine("Warchest", "192.168.1.74", [
-    HttpsService(port="8006"),
-    SshService()
-  ]),
-  Machine("Toolchest", "192.168.1.75", [
-    HttpsService(port="8006"),
-    SshService()
-  ]),
-  # TODO: Or is it toychest?
-  Machine("Toybox", "192.168.1.73", [
-    HttpsService(port="8006"),
-    SshService()
-  ])
-]
-MACHINES["Smart Home"] = [
-  Machine("Hassio", "192.168.1.67", [
-    HttpService(port="8123"),
-    SshService()
-  ])
-  # TODO: Airlockc ...?
 ]
 MACHINES["Networking Appliances"] = [
   Machine("opnsense", "192.168.1.1", [
