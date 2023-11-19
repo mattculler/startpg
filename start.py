@@ -30,8 +30,8 @@ MACHINES["Servers"] = [
     HttpsService(port="8006"),
     SshService()
   ]),
-  Machine("Warchest (convert to portainer box)", "192.168.1.74", [
-    HttpsService(check=False),
+  Machine("Tainer (Portainer)", "192.168.1.74", [
+    HttpsService(port=9443),
     SshService()
   ]),
   Machine("Hassio", "192.168.1.67", [
