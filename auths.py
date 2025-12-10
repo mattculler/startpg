@@ -40,11 +40,10 @@ class HttpBasicAuth(UNP):
 
 class HttpWebAuth(UNP):
   """Placeholder until I figure this out."""
-  def __init__(self, *args, **kwargs):
+  def __init__(self, *args, icon="🔒", **kwargs):
     UNP.__init__(self, *args, **kwargs)
 
 
 class SshAuth(UNP):
   def __init__(self, *args, **kwargs):
     UNP.__init__(self, *args, **kwargs)
-

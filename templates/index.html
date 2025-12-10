@@ -14,6 +14,7 @@
           {{ machine["status"] | safe }}
           {% for endpoint in machine["endpoints"] %}
             <br>
+            <span style="font-size: smaller;">{{ endpoint["url_descrip"] | safe }}</span>
             <a href="{{ endpoint["full_url"] }}" class="ip" target="_blank">{{ endpoint["display_url"] }}</a>
             <span class="endpoint_status">{{ endpoint["status"] | safe }}</span>
           {% endfor %}

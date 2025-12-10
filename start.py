@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import flask
 import requests
 from collections import OrderedDict
@@ -33,6 +33,13 @@ MACHINES["Servers"] = [
   Machine("Tainer (Portainer)", "192.168.1.74", [
     HttpsService(port=9443),
     SshService()
+  ]),
+  Machine("Svalbard", "192.168.1.128", [
+    SshService()
+  ]),
+  Machine("Larry", "192.168.1.129", [
+    SshService(),
+    IpmiService(domain="192.168.1.21", auth=UNP("admin", "changeme"))
   ]),
   Machine("Hassio", "192.168.1.67", [
     HttpService(port="8123"),
@@ -251,7 +258,7 @@ def hello():
         status = NOT_CHECKED
         if not machine.check:
           # The not checked message will be displayed next to the machine rather than
-          #  it's endpoints
+          #  its endpoints
           status = ""
         
         # Make a request and see if it's live
@@ -263,6 +270,7 @@ def hello():
 
         if endpoint.show_url:
           to_show_machine["endpoints"].append({
+            "url_descrip": endpoint.get_descrip(),
             "full_url": endpoint.get_fqdn(),
             "display_url": machine.get_display_url(endpoint),
             "status": status

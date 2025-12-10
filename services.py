@@ -95,7 +95,6 @@ class AbstractService(object):
     if check is not None:
       self._check = check
 
-
   def get_partially_qualified_domain_name(self, labels):
     """Returns the domain name with the specified labels."""
     pqdn = ""
@@ -122,6 +121,9 @@ class AbstractService(object):
         self.domain,
         self.port,
         self.path)
+
+  def get_descrip(self):
+    return ""
 
   def __str__(self):
     return self._description + ": " + self.__repr__()
@@ -160,4 +162,9 @@ class SshService(AbstractService):
         auth_type=auth_type,
         show_url=False,
         **kwargs)
-  
+ 
+class IpmiService(HttpsService):
+  """Ipmi management endpoint"""
+
+  def get_descrip(self):
+    return "IPMI:"
