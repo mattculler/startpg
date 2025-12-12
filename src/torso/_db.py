@@ -24,8 +24,8 @@ class Db:
 
     def __init__(self, _mode: str):
         conf_dir = Path("/run") / get_my_distribution_name()
+        conf_dir.mkdir(exist_ok=True)
         self._db_file = conf_dir / "spg.db"
-        self._db_file.mkdir(exists_allowed=True)
 
         if _mode == "reader":
             uri_mode = "ro"

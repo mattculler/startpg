@@ -14,7 +14,7 @@
           (status here)
           {% for service in host["services"] %}
             <br>
-            <span style="font-size: smaller;">{{ service["name"] }}</span>
+            <span style="font-size: smaller;">{{ service["name"] if service["name"] else '' }}</span>
             <a href="{{ service["url"] }}" class="ip" target="_blank">{{ service["url"].human_repr() }}</a>
             <span class="endpoint_status">(status here too)</span>
           {% endfor %}

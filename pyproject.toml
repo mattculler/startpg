@@ -5,6 +5,7 @@ dependencies = [
   "flask",
   "yarl",
   "pyyaml",
+  "psutil",
 ]
 
 [build-system]
