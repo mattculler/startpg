@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Local Services</title>
+    <link rel="stylesheet" href="static/css/style.css">
+  </head>
+  <body>
+    {% for group_name, group in groups.items() %}
+    <div class="machinegroup">
+      <h2 class="machinegroupname">{{ group_name }}</h2>
+      {% for host_name_display, host in group["hosts"].items() %}
+        <p class="machine">
+          <span class="machinename">{{ host_name_display }}</span>
+          (status here)
+          {% for service in host["services"] %}
+            <br>
+            <span style="font-size: smaller;">{{ service["name"] }}</span>
+            <a href="{{ service["url"] }}" class="ip" target="_blank">{{ service["url"].human_repr() }}</a>
+            <span class="endpoint_status">(status here too)</span>
+          {% endfor %}
+          {#          {% for other in machine["other"] %}
+            <br>
+            <span>{{ other | safe }}</span>
+          {% endfor %}
+          #}
+        </p>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </body>
+</html>
