@@ -9,17 +9,5 @@ Are you concerned about the security of your shit?
 
 todo
 ----
-- Dedupe www and https entries in yaml.  This:
-```
-        "-site":
-          url: "http://site.example.net"
-        "-sitewww":
-          url: "http://www.site.example.net"
-```
-to this:
-```
-        "-site":
-          url: "http://site.example.net"
-          www: true
-```
 - Talk to opnsense and incorporate that DHCP data
+- Add option to generate and download ssh configs

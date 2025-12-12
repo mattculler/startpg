@@ -4,6 +4,7 @@ dynamic = ["version"]
 dependencies = [
   "flask",
   "yarl",
+  "pyyaml",
 ]
 
 [build-system]
