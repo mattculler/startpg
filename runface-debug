@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ "`which python`" = /usr/bin/python ]
+if [ "`which python3`" = /usr/bin/python3 ]
 then
     echo "Activating venv"
     . .venv/bin/activate
