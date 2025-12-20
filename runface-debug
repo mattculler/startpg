@@ -1,3 +1,9 @@
 #!/bin/sh
 
+if [ "`which python`" = /usr/bin/python ]
+then
+    echo "Activating venv"
+    . .venv/bin/activate
+fi
+
 flask --app face.face run --host 0.0.0.0 --debug
