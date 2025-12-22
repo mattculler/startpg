@@ -1,29 +1,14 @@
 import sqlite3
-from importlib.metadata import packages_distributions
 from pathlib import Path
 from datetime import datetime
 from typing import Iterable
 
-from torso import Service
-
-def get_my_distribution_name():
-    # 1. Dynamically get the top-level package name (e.g., "torso")
-    #    __name__ will be "torso.utils"; we split to get just "torso".
-    root_package = __name__.split('.')[0]
-    
-    # 2. Get the mapping of {package: [distributions]}
-    dists = packages_distributions()
-    
-    # 3. Look up the distribution that owns this root package
-    #    This returns a list, so we take the first item.
-    dist_name = dists.get(root_package, [None])[0]
-    
-    return dist_name
+from torso import Service, util
 
 class Db:
 
     def __init__(self, _mode: str):
-        conf_dir = Path("/run") / get_my_distribution_name()
+        conf_dir = Path("/run") / util.get_distribution_name()
         conf_dir.mkdir(exist_ok=True)
         self._db_file = conf_dir / "spg.db"
 
