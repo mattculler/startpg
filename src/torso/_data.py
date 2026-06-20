@@ -8,6 +8,7 @@ class Service:
     name: str | None
     check: bool
     description: str | None
+    nocheck_reason: str | None = None  # why check is disabled, shown in the UI
 
     service_id: int | None = None  # autoincrement PK
 
@@ -36,6 +37,8 @@ class Service:
     def status_label(self) -> str:
         """Short human-readable status for display."""
         if not self.check:
+            if self.nocheck_reason:
+                return f"not checked - {self.nocheck_reason}"
             return "not checked"
         if self.last_check_status is None:
             return "?"

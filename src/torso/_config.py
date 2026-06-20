@@ -34,17 +34,28 @@ def load_config(config_file: Path = DEFAULT_CONFIG) -> Config:
             # Set defaults
             if "hostname" not in host:
                 host["hostname"] = None
-            if "check" not in host:
-                host["check"] = True
+
+            # A host/service is checked unless it carries a `nocheck:` key,
+            # whose value is the reason to surface in the UI.
+            host_nocheck = "nocheck" in host
+            host_reason = host.get("nocheck")
 
             for i, service in enumerate(host["services"]):
                 LOG.info(f"    - Service {service['url']}")
 
                 service["url"] = URL(service["url"])
 
-                # Set defaults and cascade from parent
-                if "check" not in service:
-                    service["check"] = host["check"]
+                # Set defaults and cascade `nocheck` from the parent host.
+                if "nocheck" in service:
+                    service["check"] = False
+                    reason = service["nocheck"]
+                elif host_nocheck:
+                    service["check"] = False
+                    reason = host_reason
+                else:
+                    service["check"] = True
+                    reason = None
+                service["nocheck_reason"] = reason if isinstance(reason, str) else None
                 if "name" not in service:
                     service["name"] = None
                 if "description" not in service:
@@ -71,6 +82,7 @@ def load_config(config_file: Path = DEFAULT_CONFIG) -> Config:
                     url=service_dict["url"],
                     description=service_dict["description"],
                     check=service_dict["check"],
+                    nocheck_reason=service_dict["nocheck_reason"],
                 )
                 host_obj.services.append(service_obj)
             group_obj.hosts[host_display_name] = host_obj
