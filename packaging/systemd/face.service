@@ -1,7 +1,10 @@
 [Unit]
 Description=startpg web frontend (face)
-After=network-online.target
-Wants=network-online.target
+# Wait for one hiney run at boot so the page has data immediately instead of
+# showing "?" until the first timer tick. Wants (not Requires) so a failed
+# probe sweep doesn't keep the frontend down.
+Wants=network-online.target hiney.service
+After=network-online.target hiney.service
 
 [Service]
 Type=simple
