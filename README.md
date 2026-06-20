@@ -18,8 +18,9 @@ Targets a Debian VM running as `mrc:mrc`. Set the VM in `deploy-live`, then:
 
     ./deploy-live
 
-That rsyncs the source to `/opt/startpg`, sets up a venv (`pip install -e .`),
-and installs the systemd units in `packaging/systemd/`:
+That rsyncs the source to `/opt/startpg`, sets up a uv-managed venv
+(`uv pip install -e .`; uv is auto-installed if missing, avoiding apt's
+~300MB python3-pip), and installs the systemd units in `packaging/systemd/`:
 
 - `face.service` - long-running frontend (Flask dev server, LAN-only)
 - `hiney.service` + `hiney.timer` - status sweep every 5 minutes

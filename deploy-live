@@ -34,12 +34,19 @@ echo ">> Installing on $VM"
 ssh "$VM" "sh -seu" <<EOF
 cd "$DEST"
 
-# Editable install so templates, static, and startpg.yaml resolve from $DEST.
-if [ ! -d .venv ]; then
-    python3 -m venv .venv
+# Ensure uv is available: a single static binary, far smaller and faster
+# than apt's python3-pip (~300MB). Install it for this user if missing.
+if ! command -v uv >/dev/null 2>&1 && [ ! -x "\$HOME/.local/bin/uv" ]; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
-.venv/bin/pip install --quiet --upgrade pip
-.venv/bin/pip install --quiet -e .
+export PATH="\$HOME/.local/bin:\$PATH"
+
+# Editable install into a uv-managed venv so templates, static, and
+# startpg.yaml resolve from $DEST.
+if [ ! -d .venv ]; then
+    uv venv .venv
+fi
+uv pip install --python .venv/bin/python -e .
 
 # Install/refresh the systemd units, then enable the frontend and the timer.
 sudo cp packaging/systemd/face.service /etc/systemd/system/
