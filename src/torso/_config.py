@@ -62,8 +62,8 @@ def load_config(config_file: Path = DEFAULT_CONFIG) -> Config:
         group_obj = Group(name=group_name)
         for host_display_name, host_dict in group_dict.items():
             host_obj = Host(
-                name=host_display_name, 
-                hostname=host_dict["hostname"] or 'NONEEEE',
+                name=host_display_name,
+                hostname=host_dict["hostname"],
             )
             for service_dict in host_dict["services"]:
                 service_obj = Service(

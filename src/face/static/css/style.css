@@ -25,7 +25,11 @@ html, body {
 
 .machinename {
   font-style: italic;
-  font-size: larger; 
+  font-size: larger;
+}
+
+.servicename {
+  font-size: smaller;
 }
 
 
