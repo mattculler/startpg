@@ -11,10 +11,34 @@ class Service:
 
     service_id: int | None = None  # autoincrement PK
 
-    # DB fields, NULL until checks are done
+    # DB fields, NULL until checks are done.
+    # last_check_status convention (set by torso._check):
+    #   >= 0 for http(s): the HTTP status code
+    #   0    for tcp/ssh: the port was reachable
+    #   < 0          : could not connect at all
     last_check_time: datetime | None = None
     last_check_status: int | None = None
     last_check_info: str | None = None
+
+    @property
+    def is_up(self) -> bool | None:
+        """Tri-state liveness: None if not yet determined, else reachable?"""
+        if not self.check or self.last_check_status is None:
+            return None
+        return self.last_check_status >= 0
+
+    @property
+    def status_label(self) -> str:
+        """Short human-readable status for display."""
+        if not self.check:
+            return "not checked"
+        if self.last_check_status is None:
+            return "?"
+        if self.last_check_status < 0:
+            return "down"
+        if self.url.scheme in ("http", "https"):
+            return str(self.last_check_status)
+        return "up"
 
 @dataclass 
 class Host:

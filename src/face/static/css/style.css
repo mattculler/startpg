@@ -32,4 +32,14 @@ html, body {
   font-size: smaller;
 }
 
+.status {
+  font-size: smaller;
+  margin-left: 4px;
+}
+
+.status-up { color: green; }
+.status-down { color: red; font-weight: bold; }
+.status-unchecked,
+.status-unknown { color: gray; }
+
 

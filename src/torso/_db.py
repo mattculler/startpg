@@ -73,6 +73,25 @@ class Db:
             },
         )
 
+    def get_status_by_url(self) -> dict[str, sqlite3.Row]:
+        self._db.row_factory = sqlite3.Row
+        rows = self._db.execute(
+            "SELECT url, last_check_time, last_check_status, last_check_info FROM Services"
+        ).fetchall()
+        return {row["url"]: row for row in rows}
+
+    def update_config(self, config: Config) -> None:
+        """Overlay the latest check results from the DB onto the config."""
+        by_url = self.get_status_by_url()
+        for service, host, group in util.config_iter(config):
+            row = by_url.get(service.url.human_repr())
+            if row is None:
+                continue
+            ts = row["last_check_time"]
+            service.last_check_time = datetime.fromisoformat(ts) if ts else None
+            service.last_check_status = row["last_check_status"]
+            service.last_check_info = row["last_check_info"]
+
     @classmethod
     def writer(cls) -> "Db":
         return cls(DbMode.Writer)
