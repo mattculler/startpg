@@ -1,25 +1,16 @@
 #!/bin/sh
 # Deploy startpg to the production VM over SSH (rsync source + venv + systemd).
-#
-# Fill in VM below with the production target (user@host), then run:
-#   ./deploy-live
+
 set -eu
 
-# --- Fill this in with the production VM, e.g. "mrc@192.168.1.x" ------------
-VM=""
-# ----------------------------------------------------------------------------
-
+IP=192.168.1.10
 DEST=/opt/startpg
 RUN_USER=mrc
 RUN_GROUP=mrc
-
-if [ -z "$VM" ]; then
-    echo "error: set VM at the top of this script (e.g. mrc@192.168.1.x)" >&2
-    exit 1
-fi
+VM="$RUN_USER@$IP"
 
 echo ">> Ensuring $DEST exists on $VM"
-ssh "$VM" "sudo mkdir -p $DEST && sudo chown $RUN_USER:$RUN_GROUP $DEST"
+ssh -t "$VM" "sudo mkdir -p $DEST && sudo chown $RUN_USER:$RUN_GROUP $DEST"
 
 echo ">> Syncing source to $VM:$DEST"
 rsync -a --delete \
@@ -31,7 +22,11 @@ rsync -a --delete \
     ./ "$VM:$DEST/"
 
 echo ">> Installing on $VM"
-ssh "$VM" "sh -seu" <<EOF
+# Build the remote script locally ($DEST expands here; \$HOME/\$PATH
+# are deferred to the VM), then run it with `ssh -t` passing it as an argument.
+# Keeping it off stdin leaves the terminal free for sudo's password prompt.
+remote_install=$(cat <<EOF
+set -eu
 cd "$DEST"
 
 # Ensure uv is available: a single static binary, far smaller and faster
@@ -55,6 +50,11 @@ sudo cp packaging/systemd/hiney.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now face.service
 sudo systemctl enable --now hiney.timer
-EOF
 
-echo ">> Done. face serves on http://$VM:5000/ ; hiney runs every 5 min."
+# Run one sweep right now so the page has data without waiting for the timer.
+sudo systemctl start hiney.service
+EOF
+)
+ssh -t "$VM" "$remote_install"
+
+echo ">> Done. face serves on http://$IP:5000/ ; hiney runs every 5 min."
