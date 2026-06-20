@@ -1,0 +1,13 @@
+[Unit]
+Description=startpg status probe (hiney)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=mrc
+Group=mrc
+WorkingDirectory=/opt/startpg
+ExecStart=/opt/startpg/.venv/bin/hiney
+RuntimeDirectory=startpg
+RuntimeDirectoryPreserve=yes

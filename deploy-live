@@ -1,0 +1,53 @@
+#!/bin/sh
+# Deploy startpg to the production VM over SSH (rsync source + venv + systemd).
+#
+# Fill in VM below with the production target (user@host), then run:
+#   ./deploy-live
+set -eu
+
+# --- Fill this in with the production VM, e.g. "mrc@192.168.1.x" ------------
+VM=""
+# ----------------------------------------------------------------------------
+
+DEST=/opt/startpg
+RUN_USER=mrc
+RUN_GROUP=mrc
+
+if [ -z "$VM" ]; then
+    echo "error: set VM at the top of this script (e.g. mrc@192.168.1.x)" >&2
+    exit 1
+fi
+
+echo ">> Ensuring $DEST exists on $VM"
+ssh "$VM" "sudo mkdir -p $DEST && sudo chown $RUN_USER:$RUN_GROUP $DEST"
+
+echo ">> Syncing source to $VM:$DEST"
+rsync -a --delete \
+    --exclude '.git' \
+    --exclude '.venv' \
+    --exclude '__pycache__' \
+    --exclude '*.egg-info' \
+    --exclude '*.pyc' \
+    ./ "$VM:$DEST/"
+
+echo ">> Installing on $VM"
+ssh "$VM" "sh -seu" <<EOF
+cd "$DEST"
+
+# Editable install so templates, static, and startpg.yaml resolve from $DEST.
+if [ ! -d .venv ]; then
+    python3 -m venv .venv
+fi
+.venv/bin/pip install --quiet --upgrade pip
+.venv/bin/pip install --quiet -e .
+
+# Install/refresh the systemd units, then enable the frontend and the timer.
+sudo cp packaging/systemd/face.service /etc/systemd/system/
+sudo cp packaging/systemd/hiney.service /etc/systemd/system/
+sudo cp packaging/systemd/hiney.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now face.service
+sudo systemctl enable --now hiney.timer
+EOF
+
+echo ">> Done. face serves on http://$VM:5000/ ; hiney runs every 5 min."

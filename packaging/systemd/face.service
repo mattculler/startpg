@@ -1,0 +1,17 @@
+[Unit]
+Description=startpg web frontend (face)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mrc
+Group=mrc
+WorkingDirectory=/opt/startpg
+ExecStart=/opt/startpg/.venv/bin/face
+RuntimeDirectory=startpg
+RuntimeDirectoryPreserve=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
