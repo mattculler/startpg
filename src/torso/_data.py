@@ -22,10 +22,15 @@ class Service:
 
     @property
     def is_up(self) -> bool | None:
-        """Tri-state liveness: None if not yet determined, else reachable?"""
+        """Tri-state health: None if not yet determined, else healthy?"""
         if not self.check or self.last_check_status is None:
             return None
-        return self.last_check_status >= 0
+        if self.last_check_status < 0:
+            return False
+        if self.url.scheme in ("http", "https"):
+            # A 4xx/5xx response means the server answered but is unhealthy.
+            return self.last_check_status < 400
+        return True  # tcp/ssh: a non-negative status means the port was reachable
 
     @property
     def status_label(self) -> str:
