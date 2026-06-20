@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
-from torso import Db, load_config
-
+from torso import Db, load_config, util
+import logging
 import time
 
 def main():
-    load_config()
+    logging.basicConfig(level=logging.INFO)
+    conf = load_config()
     db = Db.writer()
-    time.sleep(111)
+    db.insert_config(conf)
+    #breakpoint()
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,7 @@
 from importlib.metadata import packages_distributions
+from collections.abc import Iterator
+
+from torso import Group, Host, Service, Config
 
 def get_distribution_name() -> str:
     # 1. Dynamically get the top-level package name (e.g., "torso")
@@ -14,3 +17,8 @@ def get_distribution_name() -> str:
     
     return dist_name
 
+def config_iter(config: Config) -> Iterator[tuple[Service, Host, Group]]:
+    for _, group in config.items():
+        for _, host in group.hosts.items():
+            for service in host.services:
+                yield service, host, group

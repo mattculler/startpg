@@ -6,4 +6,7 @@ then
     . .venv/bin/activate
 fi
 
+sudo mkdir -v /run/startpg
+sudo chown -c /run/startpg --reference=$0
+
 flask --app face.face run --host 0.0.0.0 --debug

@@ -27,3 +27,6 @@ class Group:
     name: str
     hosts: dict[str, Host] = field(default_factory=dict)
 
+# group name -> Group
+type Config = dict[str, Group]
+

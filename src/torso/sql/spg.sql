@@ -4,6 +4,6 @@ CREATE TABLE IF NOT EXISTS Services (
     url TEXT UNIQUE NOT NULL,
     last_check_time TEXT,
     last_check_status INTEGER,
-    last_check_info TEXT,
+    last_check_info TEXT
 );
 

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 import logging
 from yarl import URL
-from torso import Service, Host, Group
+from torso import Service, Host, Group, Config
 
 DEFAULT_CONFIG = (Path(__file__) / "../../../startpg.yaml").resolve()
 
@@ -18,7 +18,7 @@ def _auto_hostname(host_display_name: str, host):
         host["hostname"] = _to_hostname(host_display_name)
         LOG.info(f"    Set hostname to '{host['hostname']}', from display name")
 
-def load_config(config_file: Path = DEFAULT_CONFIG) -> dict[str, Group]:
+def load_config(config_file: Path = DEFAULT_CONFIG) -> Config:
     with config_file.open() as f:
         root_conf = yaml.safe_load(f)
 
@@ -63,7 +63,7 @@ def load_config(config_file: Path = DEFAULT_CONFIG) -> dict[str, Group]:
         for host_display_name, host_dict in group_dict.items():
             host_obj = Host(
                 name=host_display_name, 
-                hostname=host_dict["hostname"],
+                hostname=host_dict["hostname"] or 'NONEEEE',
             )
             for service_dict in host_dict["services"]:
                 service_obj = Service(
