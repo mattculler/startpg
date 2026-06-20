@@ -48,11 +48,14 @@ sudo cp packaging/systemd/face.service /etc/systemd/system/
 sudo cp packaging/systemd/hiney.service /etc/systemd/system/
 sudo cp packaging/systemd/hiney.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now face.service
 sudo systemctl enable --now hiney.timer
+sudo systemctl enable face.service
 
-# Run one sweep right now so the page has data without waiting for the timer.
-sudo systemctl start hiney.service
+# Restart (not just enable --now) so face loads the freshly-installed code --
+# enable --now won't restart an already-running unit, which is why a redeploy
+# kept serving "?". Its Wants/After=hiney.service pulls a fresh sweep first,
+# so face comes back up with data.
+sudo systemctl restart face.service
 EOF
 )
 ssh -t "$VM" "$remote_install"
