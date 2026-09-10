@@ -72,3 +72,18 @@ html, body {
 .machine.collapsed .services {
   display: none;
 }
+
+/* SSH endpoints render as a bare status glyph rather than a (useless) link.
+ * The port tags along only when it isn't the standard 22. */
+.ssh {
+  font-family: monospace;
+  font-weight: bold;
+  cursor: default;
+}
+
+.sshport { font-size: smaller; }
+
+.ssh-up { color: green; }
+.ssh-down { color: red; }
+.ssh-unchecked,
+.ssh-unknown { color: gray; }

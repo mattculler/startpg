@@ -34,6 +34,17 @@ class Service:
         return True  # tcp/ssh: a non-negative status means the port was reachable
 
     @property
+    def is_ssh(self) -> bool:
+        """SSH endpoints are shown as a bare status icon, not a link."""
+        return self.url.scheme == "ssh"
+
+    @property
+    def ssh_port_suffix(self) -> str:
+        """":2222" for a non-standard ssh port, empty when it's the usual 22."""
+        port = self.url.port
+        return "" if port is None or port == 22 else f":{port}"
+
+    @property
     def status_label(self) -> str:
         """Short human-readable status for display."""
         if not self.check:
