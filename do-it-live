@@ -1,7 +1,0 @@
-#!/bin/bash
-# Copy all the files to the server and kick it
-
-
-scp -Crp ../startpg/* root@192.168.1.10:/root/startpg/
-ssh root@192.168.1.10 "/etc/init.d/startpg restart"
-

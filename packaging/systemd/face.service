@@ -1,0 +1,20 @@
+[Unit]
+Description=startpg web frontend (face)
+# Wait for one hiney run at boot so the page has data immediately instead of
+# showing "?" until the first timer tick. Wants (not Requires) so a failed
+# probe sweep doesn't keep the frontend down.
+Wants=network-online.target hiney.service
+After=network-online.target hiney.service
+
+[Service]
+Type=simple
+User=mrc
+Group=mrc
+WorkingDirectory=/opt/startpg
+ExecStart=/opt/startpg/.venv/bin/face
+RuntimeDirectory=startpg
+RuntimeDirectoryPreserve=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

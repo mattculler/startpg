@@ -1,0 +1,21 @@
+[project]
+name = "startpg"
+dynamic = ["version"]
+dependencies = [
+  "flask",
+  "yarl",
+  "pyyaml",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+face = "face.face:main"
+hiney = "hiney.hiney:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"]
+namespaces = false

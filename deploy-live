@@ -1,0 +1,63 @@
+#!/bin/sh
+# Deploy startpg to the production VM over SSH (rsync source + venv + systemd).
+
+set -eu
+
+IP=192.168.1.10
+DEST=/opt/startpg
+RUN_USER=mrc
+RUN_GROUP=mrc
+VM="$RUN_USER@$IP"
+
+echo ">> Ensuring $DEST exists on $VM"
+ssh -t "$VM" "sudo mkdir -p $DEST && sudo chown $RUN_USER:$RUN_GROUP $DEST"
+
+echo ">> Syncing source to $VM:$DEST"
+rsync -a --delete \
+    --exclude '.git' \
+    --exclude '.venv' \
+    --exclude '__pycache__' \
+    --exclude '*.egg-info' \
+    --exclude '*.pyc' \
+    ./ "$VM:$DEST/"
+
+echo ">> Installing on $VM"
+# Build the remote script locally ($DEST expands here; \$HOME/\$PATH
+# are deferred to the VM), then run it with `ssh -t` passing it as an argument.
+# Keeping it off stdin leaves the terminal free for sudo's password prompt.
+remote_install=$(cat <<EOF
+set -eu
+cd "$DEST"
+
+# Ensure uv is available: a single static binary, far smaller and faster
+# than apt's python3-pip (~300MB). Install it for this user if missing.
+if ! command -v uv >/dev/null 2>&1 && [ ! -x "\$HOME/.local/bin/uv" ]; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+export PATH="\$HOME/.local/bin:\$PATH"
+
+# Editable install into a uv-managed venv so templates, static, and
+# startpg.yaml resolve from $DEST.
+if [ ! -d .venv ]; then
+    uv venv .venv
+fi
+uv pip install --python .venv/bin/python -e .
+
+# Install/refresh the systemd units, then enable the frontend and the timer.
+sudo cp packaging/systemd/face.service /etc/systemd/system/
+sudo cp packaging/systemd/hiney.service /etc/systemd/system/
+sudo cp packaging/systemd/hiney.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now hiney.timer
+sudo systemctl enable face.service
+
+# Restart (not just enable --now) so face loads the freshly-installed code --
+# enable --now won't restart an already-running unit, which is why a redeploy
+# kept serving "?". Its Wants/After=hiney.service pulls a fresh sweep first,
+# so face comes back up with data.
+sudo systemctl restart face.service
+EOF
+)
+ssh -t "$VM" "$remote_install"
+
+echo ">> Done. face serves on http://$IP:5000/ ; hiney runs every 5 min."
