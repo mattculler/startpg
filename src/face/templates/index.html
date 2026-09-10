@@ -14,7 +14,7 @@
           {% for service in host.services %}
             <br>
             {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
-            <a href="{{ service.url }}" class="ip" target="_blank">{{ service.url.human_repr() }}</a>
+            <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank">{{ service.url.human_repr() }}</a>
             {% set cls = 'unchecked' if not service.check else 'unknown' if service.is_up is none else 'up' if service.is_up else 'down' %}
             <span class="status status-{{ cls }}"{% if service.last_check_info %} title="{{ service.last_check_info }}"{% endif %}>{{ service.status_label }}</span>
           {% endfor %}

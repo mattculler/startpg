@@ -43,3 +43,6 @@ html, body {
 .status-unknown { color: gray; }
 
 
+/* Not-checked services stay clickable, but struck through so it's obvious at
+ * a glance that the status next to them isn't being verified. */
+.ip.nocheck { text-decoration: line-through; }
