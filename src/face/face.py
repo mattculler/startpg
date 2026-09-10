@@ -22,7 +22,10 @@ def _reader() -> Db | None:
     if db is None:
         try:
             db = Db.reader()
-        except sqlite3.OperationalError:
+        except (sqlite3.Error, OSError):
+            # Not just a missing DB file: /run/startpg may not exist yet, and
+            # creating it there needs privileges we don't have. Degrade to the
+            # bare service list rather than 500ing.
             return None
     return db
 
