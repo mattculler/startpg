@@ -46,3 +46,29 @@ html, body {
 /* Not-checked services stay clickable, but struck through so it's obvious at
  * a glance that the status next to them isn't being verified. */
 .ip.nocheck { text-decoration: line-through; }
+
+/* Click a group or host name to collapse it. */
+.machinegroupname,
+.machinename {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Marker flips to point right when the section is collapsed. */
+.machinegroupname::before,
+.machinename::before {
+  content: "\25be";  /* down-pointing triangle */
+  display: inline-block;
+  width: 1em;
+  font-style: normal;
+}
+
+.machinegroup.collapsed > .machinegroupname::before,
+.machine.collapsed > .machinename::before {
+  content: "\25b8";  /* right-pointing triangle */
+}
+
+.machinegroup.collapsed .grouphosts,
+.machine.collapsed .services {
+  display: none;
+}

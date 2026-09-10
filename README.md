@@ -33,6 +33,12 @@ on the VM, which goes through `OUTPUT`) would see a refused connection and
 report startpg itself as down. Binding 80 for real keeps every vantage point
 in agreement. Run `face` by hand and it falls back to port 5000.
 
+Clicking a group or host name collapses it. That state is persisted server-side
+in `/var/lib/startpg/collapsed.json` (via `StateDirectory=startpg`) and rendered
+into the HTML, so it survives reloads and reboots, applies across every browser
+and device, and never flashes open on load. It's global rather than per-user,
+which suits a single-user homepage.
+
 Both units use `RuntimeDirectory=startpg` (with `RuntimeDirectoryPreserve=yes`,
 since the shared `/run/startpg` DB outlives hiney's one-shot runs). The DB lives
 on tmpfs and is rebuilt by hiney each cycle, so it's fine to lose on reboot.

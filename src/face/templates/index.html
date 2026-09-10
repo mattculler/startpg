@@ -6,21 +6,30 @@
   </head>
   <body>
     {% for group_name, group in groups.items() %}
-    <div class="machinegroup">
+    <div class="machinegroup{% if group_name in collapsed_groups %} collapsed{% endif %}"
+         data-group="{{ group_name }}">
       <h2 class="machinegroupname">{{ group_name }}</h2>
-      {% for host_name_display, host in group.hosts.items() %}
-        <p class="machine">
-          <span class="machinename">{{ host_name_display }}</span>
-          {% for service in host.services %}
-            <br>
-            {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
-            <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank">{{ service.url.human_repr() }}</a>
-            {% set cls = 'unchecked' if not service.check else 'unknown' if service.is_up is none else 'up' if service.is_up else 'down' %}
-            <span class="status status-{{ cls }}"{% if service.last_check_info %} title="{{ service.last_check_info }}"{% endif %}>{{ service.status_label }}</span>
-          {% endfor %}
-        </p>
-      {% endfor %}
+      <div class="grouphosts">
+        {% for host_name_display, host in group.hosts.items() %}
+          {% set host_key = group_name ~ "/" ~ host_name_display %}
+          <div class="machine{% if host_key in collapsed_hosts %} collapsed{% endif %}"
+               data-host="{{ host_key }}">
+            <span class="machinename">{{ host_name_display }}</span>
+            <div class="services">
+              {% for service in host.services %}
+                <div class="service">
+                  {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
+                  <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank">{{ service.url.human_repr() }}</a>
+                  {% set cls = 'unchecked' if not service.check else 'unknown' if service.is_up is none else 'up' if service.is_up else 'down' %}
+                  <span class="status status-{{ cls }}"{% if service.last_check_info %} title="{{ service.last_check_info }}"{% endif %}>{{ service.status_label }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
     </div>
     {% endfor %}
+    <script src="static/js/collapse.js"></script>
   </body>
 </html>
