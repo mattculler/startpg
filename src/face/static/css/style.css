@@ -54,19 +54,33 @@ html, body {
   user-select: none;
 }
 
-/* Marker flips to point right when the section is collapsed. */
+/* The marker is drawn with borders rather than set as a font glyph. The
+ * Unicode "small triangle" codepoints carry very little ink and fall back to
+ * wildly different sizes across mobile fonts, which is how they ended up
+ * microscopic on a phone. Borders scale predictably with the font size. */
 .machinegroupname::before,
 .machinename::before {
-  content: "\25be";  /* down-pointing triangle */
+  content: "";
   display: inline-block;
-  width: 1em;
-  font-style: normal;
+  width: 0;
+  height: 0;
+  margin-right: 0.4em;
+  vertical-align: middle;
+  border-left: 0.32em solid transparent;
+  border-right: 0.32em solid transparent;
+  border-top: 0.42em solid currentColor;
 }
 
 .machinegroup.collapsed > .machinegroupname::before,
 .machine.collapsed > .machinename::before {
-  content: "\25b8";  /* right-pointing triangle */
+  border-left: 0.42em solid currentColor;
+  border-right: 0;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
 }
+
+/* Long URLs shouldn't be able to push the layout sideways on a narrow screen. */
+.service { overflow-wrap: anywhere; }
 
 .machinegroup.collapsed .grouphosts,
 .machine.collapsed .services {
