@@ -25,6 +25,14 @@ That rsyncs the source to `/opt/startpg`, sets up a uv-managed venv
 - `face.service` - long-running frontend (Flask dev server, LAN-only)
 - `hiney.service` + `hiney.timer` - status sweep every 5 minutes
 
+face serves on port 80 directly: the unit sets `STARTPG_PORT=80` and
+`AmbientCapabilities=CAP_NET_BIND_SERVICE`, which lets the unprivileged user
+bind a low port. Do NOT also run a NAT redirect for 80 - a `nat PREROUTING`
+rule only rewrites packets arriving from other hosts, so hiney (probing from
+on the VM, which goes through `OUTPUT`) would see a refused connection and
+report startpg itself as down. Binding 80 for real keeps every vantage point
+in agreement. Run `face` by hand and it falls back to port 5000.
+
 Both units use `RuntimeDirectory=startpg` (with `RuntimeDirectoryPreserve=yes`,
 since the shared `/run/startpg` DB outlives hiney's one-shot runs). The DB lives
 on tmpfs and is rebuilt by hiney each cycle, so it's fine to lose on reboot.

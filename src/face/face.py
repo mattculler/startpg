@@ -1,3 +1,4 @@
+import os
 import sqlite3
 
 from flask import Flask, render_template
@@ -35,4 +36,7 @@ def index():
 
 
 def main():
-    app.run(host="0.0.0.0")
+    # The port comes from the environment so the systemd unit can ask for 80
+    # (granted via AmbientCapabilities=CAP_NET_BIND_SERVICE) while a bare
+    # `face` run by hand still works unprivileged on 5000.
+    app.run(host="0.0.0.0", port=int(os.environ.get("STARTPG_PORT", "5000")))
