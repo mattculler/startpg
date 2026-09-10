@@ -87,15 +87,31 @@ html, body {
   display: none;
 }
 
-/* SSH endpoints render as a bare status glyph rather than a (useless) link.
- * The port tags along only when it isn't the standard 22. */
+/* SSH endpoints render as a labelled badge rather than a (useless) link.
+ * The port tags along outside the badge, and only when it isn't the usual 22. */
 .ssh {
-  font-family: monospace;
-  font-weight: bold;
   cursor: default;
+  white-space: nowrap;
 }
 
-.sshport { font-size: smaller; }
+.sshbadge {
+  display: inline-block;
+  padding: 0.05em 0.45em;
+  border: 2px solid currentColor;
+  border-radius: 0.45em;
+  corner-shape: squircle;  /* a true superellipse where the browser has it */
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 0.8em;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+}
+
+.sshport {
+  font-family: monospace;
+  font-size: 0.8em;
+  margin-left: 0.25em;
+}
 
 .ssh-up { color: green; }
 .ssh-down { color: red; }

@@ -24,9 +24,9 @@
                 {% set cls = 'unchecked' if not service.check else 'unknown' if service.is_up is none else 'up' if service.is_up else 'down' %}
                 <div class="service">
                   {% if service.is_ssh %}
-                    {# No link: ssh:// isn't much use to a browser. Just a
-                       green/red shell glyph, with the port if it's unusual. #}
-                    <span class="ssh ssh-{{ cls }}" title="{{ service.url.human_repr() }} - {{ service.status_label }}{% if service.last_check_info %} ({{ service.last_check_info }}){% endif %}">&gt;_{% if service.ssh_port_suffix %}<span class="sshport">{{ service.ssh_port_suffix }}</span>{% endif %}</span>
+                    {# No link: ssh:// isn't much use to a browser. A green/red
+                       SSH badge instead, with the port if it's unusual. #}
+                    <span class="ssh ssh-{{ cls }}" title="{{ service.url.human_repr() }} - {{ service.status_label }}{% if service.last_check_info %} ({{ service.last_check_info }}){% endif %}"><span class="sshbadge">SSH</span>{% if service.ssh_port_suffix %}<span class="sshport">{{ service.ssh_port_suffix }}</span>{% endif %}</span>
                   {% else %}
                     {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
                     <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank">{{ service.url.human_repr() }}</a>
