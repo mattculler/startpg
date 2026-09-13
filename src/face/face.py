@@ -84,6 +84,18 @@ def _save_collapsed(state: dict[str, set[str]]) -> None:
         raise
 
 
+def _known_keys() -> dict[str, set[str]]:
+    """The collapse keys the loaded config can actually render."""
+    return {
+        "groups": set(conf),
+        "hosts": {
+            f"{group_name}/{host_name}"
+            for group_name, group in conf.items()
+            for host_name in group.hosts
+        },
+    }
+
+
 @app.route("/")
 def index():
     reader = _reader()
@@ -114,6 +126,11 @@ def set_collapsed():
                 collapsed[bucket].add(key)
             else:
                 collapsed[bucket].discard(key)
+            # Forget keys the config no longer has, so sections that get
+            # renamed or deleted in startpg.yaml don't pile up forever.
+            known = _known_keys()
+            for name, keys in collapsed.items():
+                collapsed[name] = keys & known[name]
             _save_collapsed(collapsed)
     except OSError as e:
         return {"error": f"could not persist state: {e}"}, 500
