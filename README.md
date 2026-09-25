@@ -48,4 +48,9 @@ todo
 - Talk to opnsense and incorporate that DHCP data
 - Add option to generate and download ssh configs
 - Try HTTP basic auth for some of these devices and add it if they work.  See if I can implement other auth methods
-- 
+- Add to Networking: the new smart switch, the 10g uplink switch, and any other networking equipment with a status page
+- Incorporate OOB management interfaces into their respective hosts.  Should be oob: and oob-ssh: keys for each, with auth info
+- Not sure where these go:
+  - nginx (How to include when I have it set to drop connections not from given source domains?)
+  - IP cameras
+  - other stuff from DHCP reservations page
