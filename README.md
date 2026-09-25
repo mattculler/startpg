@@ -50,9 +50,11 @@ Syncing with DHCP reservations
 `hands` asks the OPNsense router for its static DHCP reservations and walks
 you through reconciling `startpg.yaml` with them:
 
-- new reservations: link one to an existing host, add it as a new host, or
-  ignore it for good
-- changed ones: rewrite the URLs that use the old IP, follow a hostname change
+- new reservations: link one to an existing host (and maybe rename the host
+  after the reservation's description), add it as a new host, or ignore it for
+  good
+- changed ones: rewrite the URLs that use the old IP, follow a hostname change,
+  rename the host after a new description
 - a device that got a new MAC but kept its IP or hostname (a rebuilt VM, a
   service moved to new hardware): carry its link over
 - ones that are gone: relink the host to another reservation, unlink it, stop
@@ -78,11 +80,11 @@ ISC DHCP backend is supported so far; `BACKENDS` there is where Kea or Dnsmasq
 would slot in.
 
 What hands remembers lives in the yaml but never shows on the page. A linked
-host's `dhcp:` list holds its reservations (mac, ip, hostname) as of the last
-sync, which is how the next sync tells what changed, and `_dhcp: ignore:`
-holds the ones you've ignored. Top-level keys starting with `_` aren't groups.
-hands rewrites the whole file with PyYAML, so comments in it don't survive;
-keep notes here instead.
+host's `dhcp:` list holds its reservations (mac, ip, hostname, description) as
+of the last sync, which is how the next sync tells what changed, and
+`_dhcp: ignore:` holds the ones you've ignored. Top-level keys starting with
+`_` aren't groups. hands rewrites the whole file with PyYAML, so comments in it
+don't survive; keep notes here instead.
 
 todo
 ----

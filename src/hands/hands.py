@@ -93,7 +93,14 @@ def snapshot(res: Reservation) -> dict:
     entry = {"mac": res.mac, "ip": res.ip}
     if res.hostname:
         entry["hostname"] = res.hostname
+    if res.description:
+        entry["description"] = res.description
     return entry
+
+
+def reservation_changed(link, res: Reservation) -> bool:
+    """Whether the reservation differs from what the link remembers of it."""
+    return any(getattr(res, f) != getattr(link, f) for f in ("ip", "hostname", "description"))
 
 
 def entry_ip(entry: dict):
@@ -208,7 +215,7 @@ def show_res(res: Reservation) -> str:
 class Link:
     """A remembered reservation: a host's `dhcp:` entry, or an ignored one."""
 
-    entry: dict  # mac/ip/hostname as of the last sync, updated in place
+    entry: dict  # the reservation as of the last sync, updated in place
     siblings: list  # the list holding entry, to unlink it from
     group: str | None = None  # None for an ignored reservation
     host: str | None = None
@@ -225,8 +232,12 @@ class Link:
     def hostname(self) -> str:
         return str(self.entry.get("hostname") or "")
 
+    @property
+    def description(self) -> str:
+        return str(self.entry.get("description") or "")
+
     def show(self) -> str:
-        return show(self.ip, self.mac, self.hostname)
+        return show(self.ip, self.mac, self.hostname, self.description)
 
     def unlink(self) -> None:
         self.siblings.remove(self.entry)
@@ -238,7 +249,7 @@ def show_reservation(heading: str, res: Reservation, was: Link | None = None) ->
     for field in ("mac", "ip", "hostname", "description"):
         value = getattr(res, field)
         line = f"    {field + ':':<12} {value or '(none)'}"
-        if was is not None and field != "description" and getattr(was, field) != value:
+        if was is not None and getattr(was, field) != value:
             line += f"  (was {getattr(was, field) or '(none)'})"
         print(line)
 
@@ -257,15 +268,21 @@ def hostname_question(current: str | None, new: str) -> str:
     return f"  Replace the host's hostname ({current}) with the router's ({new})?"
 
 
+def rename_question(name: str, description: str) -> str:
+    return f'  Rename the host "{name}" to the router\'s description, "{description}"?'
+
+
 class Sync:
     def __init__(self, doc: dict, reservations: list[Reservation]):
         self.doc = doc
         self.reservations = {res.mac: res for res in reservations}
         self.claimed: set[str] = set()  # MACs a link now accounts for
+        self.all_links: list[Link] = []
 
     def run(self) -> None:
         matched, gone = [], []
-        for link in self.links():
+        self.all_links = self.links()
+        for link in self.all_links:
             res = self.reservations.get(link.mac)
             if res is None:
                 gone.append(link)
@@ -276,7 +293,7 @@ class Sync:
         changed = sum(
             1
             for link, res in matched
-            if link.group and (res.ip, res.hostname) != (link.ip, link.hostname)
+            if link.group and reservation_changed(link, res)
         )
         new = len(self.reservations) - len(self.claimed)
         print(
@@ -329,7 +346,7 @@ class Sync:
             link.entry.update(snapshot(res))
             return
         host = self.host(link)
-        if host is None or (res.ip, res.hostname) == (link.ip, link.hostname):
+        if host is None or not reservation_changed(link, res):
             return
         print(f"\n{link.host} ({link.group}): its reservation changed on the router.")
         show_reservation("The reservation, from the router:", res, was=link)
@@ -338,6 +355,8 @@ class Sync:
             self.change_ip(link, host, res)
         if res.hostname != link.hostname:
             self.change_hostname(link, host, res)
+        if res.description != link.description:
+            self.change_description(link, host, res)
 
     def change_ip(self, link: Link, host: dict, res: Reservation) -> None:
         services = [s for s in host.get("services") or [] if url_host(s["url"]) == link.ip]
@@ -372,6 +391,38 @@ class Sync:
             link.entry["hostname"] = res.hostname
         else:
             link.entry.pop("hostname", None)
+
+    def change_description(self, link: Link, host: dict, res: Reservation) -> None:
+        if res.description and res.description != link.host:
+            # Follow the router by default if the host was named after the
+            # old description.
+            answer = confirm(
+                rename_question(link.host, res.description),
+                link.host == link.description,
+                skip=True,
+            )
+            if answer is None:
+                return
+            if answer and not self.rename_host(link.group, link.host, res.description):
+                return  # the name's taken; ask again next time
+        if res.description:
+            link.entry["description"] = res.description
+        else:
+            link.entry.pop("description", None)
+
+    def rename_host(self, group_name: str, old: str, new: str) -> bool:
+        """Rename a host, keeping its place in its group."""
+        group = self.doc[group_name]
+        if new in group:
+            print(f'  {group_name} already has a host called "{new}", so the name stays.')
+            return False
+        renamed = {new if name == old else name: host for name, host in group.items()}
+        group.clear()
+        group.update(renamed)
+        for link in self.all_links:
+            if (link.group, link.host) == (group_name, old):
+                link.host = new
+        return True
 
     # A remembered reservation the router no longer has.
 
@@ -496,17 +547,24 @@ class Sync:
         show_host("The host, in startpg.yaml:", host_name, host)
 
         # A host that's already linked is gaining a second interface, like an
-        # IPMI port, whose hostname shouldn't displace the host's own.
+        # IPMI port, whose hostname and description shouldn't displace the
+        # host's own hostname and name.
         second_interface = bool(host.get("dhcp"))
         host.setdefault("dhcp", []).append(snapshot(res))
         self.claimed.add(res.mac)
 
         current = host.get("hostname")
-        if res.hostname and current != res.hostname:
-            if second_interface:
-                print("  Leaving the host's hostname be: this is its second reservation.")
-            elif confirm(hostname_question(current, res.hostname), not current):
+        new_hostname = bool(res.hostname) and current != res.hostname
+        new_name = bool(res.description) and res.description != host_name
+        if second_interface:
+            kept = [what for what, new in (("hostname", new_hostname), ("name", new_name)) if new]
+            if kept:
+                print(f"  Leaving the host's {' and '.join(kept)} be: this is its second reservation.")
+        else:
+            if new_hostname and confirm(hostname_question(current, res.hostname), not current):
                 set_hostname(host, res.hostname)
+            if new_name and confirm(rename_question(host_name, res.description), False):
+                self.rename_host(group_name, host_name, res.description)
 
         if res.ip not in service_ips(host):
             question = f"  None of the host's URLs use {res.ip}. Probe it for services to add?"
