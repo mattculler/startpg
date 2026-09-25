@@ -52,9 +52,22 @@ class Db:
         return int(row[0])
 
     def insert_config(self, config: Config) -> None:
-        """Do the initial insert of services from config."""
+        """Sync the Services table to the config.
+
+        Inserts rows for new services and deletes rows for services no longer
+        in the config, so they stop lingering in the DB until the next reboot.
+        """
+        urls = []
         for service, host, group in util.config_iter(config):
             service.service_id = self.insert_service(service, host)
+            urls.append(service.url.human_repr())
+
+        placeholders = ", ".join("?" * len(urls))
+        cur = self._db.execute(
+            f"DELETE FROM Services WHERE url NOT IN ({placeholders})", urls
+        )
+        if cur.rowcount:
+            LOG.info(f"Deleted {cur.rowcount} service(s) no longer in config")
 
     def update_service(self, service_id: int, status: int, info: str) -> None:
         self._db.execute(
