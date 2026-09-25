@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import tempfile
+import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -120,15 +121,16 @@ def _represent_str(dumper, data):
 _Dumper.add_representer(str, _represent_str)
 
 
+def to_yaml(data) -> str:
+    return yaml.dump(data, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=1000)
+
+
 def dump(doc: dict) -> str:
     # Groups first, then the "_" metadata blocks.
     ordered = {k: v for k, v in doc.items() if not k.startswith("_")}
     ordered |= {k: v for k, v in doc.items() if k.startswith("_")}
-    text = yaml.dump(
-        ordered, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=1000
-    )
     # A blank line between top-level blocks, which makes the file easier to scan.
-    return re.sub(r"\n(?=\S)", "\n\n", text)
+    return re.sub(r"\n(?=\S)", "\n\n", to_yaml(ordered))
 
 
 def write(path: Path, text: str) -> None:
@@ -230,6 +232,31 @@ class Link:
         self.siblings.remove(self.entry)
 
 
+def show_reservation(heading: str, res: Reservation, was: Link | None = None) -> None:
+    """Print every field of a reservation, marking any that changed since `was`."""
+    print(f"  {heading}")
+    for field in ("mac", "ip", "hostname", "description"):
+        value = getattr(res, field)
+        line = f"    {field + ':':<12} {value or '(none)'}"
+        if was is not None and field != "description" and getattr(was, field) != value:
+            line += f"  (was {getattr(was, field) or '(none)'})"
+        print(line)
+
+
+def show_host(heading: str, host_name: str, host: dict) -> None:
+    """Print a host's whole section, as startpg.yaml has it."""
+    print(f"  {heading}")
+    print(textwrap.indent(to_yaml({host_name: host}), "    "), end="")
+
+
+def hostname_question(current: str | None, new: str) -> str:
+    if not new:
+        return f"  The router's reservation has no hostname now. Remove the host's ({current})?"
+    if not current:
+        return f"  The host has no hostname. Use the router's ({new})?"
+    return f"  Replace the host's hostname ({current}) with the router's ({new})?"
+
+
 class Sync:
     def __init__(self, doc: dict, reservations: list[Reservation]):
         self.doc = doc
@@ -289,9 +316,9 @@ class Sync:
 
     def claim(self, link: Link, res: Reservation) -> None:
         """Point link at res (which may have a new MAC) and catch it up."""
-        link.entry["mac"] = res.mac
         self.claimed.add(res.mac)
-        self.update(link, res)
+        self.update(link, res)  # before the MAC changes, so it can show the old one
+        link.entry["mac"] = res.mac
 
     # A reservation that's still there, which may have changed.
 
@@ -302,26 +329,24 @@ class Sync:
             link.entry.update(snapshot(res))
             return
         host = self.host(link)
-        if host is None:
+        if host is None or (res.ip, res.hostname) == (link.ip, link.hostname):
             return
+        print(f"\n{link.host} ({link.group}): its reservation changed on the router.")
+        show_reservation("The reservation, from the router:", res, was=link)
+        show_host("The host, in startpg.yaml:", link.host, host)
         if res.ip != link.ip:
             self.change_ip(link, host, res)
         if res.hostname != link.hostname:
             self.change_hostname(link, host, res)
 
     def change_ip(self, link: Link, host: dict, res: Reservation) -> None:
-        print(
-            f"\n{link.host} ({link.group}): its reservation moved from "
-            f"{link.ip} to {res.ip}."
-        )
         services = [s for s in host.get("services") or [] if url_host(s["url"]) == link.ip]
         if not services:
-            print(f"  None of its URLs use {link.ip}, so there's nothing to rewrite.")
+            print(f"  None of the host's URLs use the old IP ({link.ip}), so there's nothing to rewrite.")
             link.entry["ip"] = res.ip
             return
-        for service in services:
-            print(f"    {service['url']}")
-        answer = confirm(f"  Rewrite these to use {res.ip}?", True, skip=True)
+        urls = "the host's URL" if len(services) == 1 else f"the host's {len(services)} URLs"
+        answer = confirm(f"  Rewrite {urls} on {link.ip} to use {res.ip}?", True, skip=True)
         if answer is None:
             return
         if answer:
@@ -330,17 +355,12 @@ class Sync:
         link.entry["ip"] = res.ip
 
     def change_hostname(self, link: Link, host: dict, res: Reservation) -> None:
-        old, new = link.hostname or "(none)", res.hostname or "(none)"
         current = host.get("hostname")
-        print(
-            f"\n{link.host} ({link.group}): its reservation's hostname changed "
-            f"from {old} to {new}."
-        )
-        if current != res.hostname:
+        if (current or "") != res.hostname:
             # Follow the reservation by default, unless the host's hostname
             # was already its own thing.
             answer = confirm(
-                f"  Change the host's hostname from {current or '(none)'} to {new}?",
+                hostname_question(current, res.hostname),
                 not current or current == link.hostname,
                 skip=True,
             )
@@ -386,10 +406,11 @@ class Sync:
             print(f"\nForgot the ignored reservation {link.show()}, which is gone.")
             return
 
-        print(f"\n{link.host} ({link.group}) was linked to a reservation that's gone:")
-        print(f"  {link.show()}")
+        print(f"\n{link.host} ({link.group}): its reservation is gone from the router.")
+        print(f"    {link.show()}")
+        show_host("The host, in startpg.yaml:", link.host, self.host(link))
         for res, same in lookalikes:
-            print(f"  {show_res(res)} is new and has the same {same}.")
+            show_reservation(f"A new reservation with the same {same}, from the router:", res)
             if confirm("  Is it the same device with a new MAC?", True):
                 self.claim(link, res)
                 return
@@ -470,6 +491,10 @@ class Sync:
 
     def link(self, res: Reservation, group_name: str, host_name: str) -> None:
         host = self.doc[group_name][host_name]
+        print(f"  Linking it to {host_name} ({group_name}).")
+        show_reservation("The reservation, from the router:", res)
+        show_host("The host, in startpg.yaml:", host_name, host)
+
         # A host that's already linked is gaining a second interface, like an
         # IPMI port, whose hostname shouldn't displace the host's own.
         second_interface = bool(host.get("dhcp"))
@@ -477,13 +502,15 @@ class Sync:
         self.claimed.add(res.mac)
 
         current = host.get("hostname")
-        if res.hostname and current != res.hostname and not second_interface:
-            currently = f" (currently {current})" if current else ""
-            if confirm(f"  Set its hostname to {res.hostname}{currently}?", not current):
+        if res.hostname and current != res.hostname:
+            if second_interface:
+                print("  Leaving the host's hostname be: this is its second reservation.")
+            elif confirm(hostname_question(current, res.hostname), not current):
                 set_hostname(host, res.hostname)
 
         if res.ip not in service_ips(host):
-            if confirm(f"  None of its URLs use {res.ip}. Probe it for services to add?", True):
+            question = f"  None of the host's URLs use {res.ip}. Probe it for services to add?"
+            if confirm(question, True):
                 host.setdefault("services", []).extend(self.choose_services(res.ip))
 
     def add_host(self, res: Reservation) -> bool:
@@ -519,6 +546,7 @@ class Sync:
         group[name] = host
         self.doc[group_name] = group
         self.claimed.add(res.mac)
+        show_host(f"Added to {group_name}:", name, host)
         return True
 
     def choose_services(self, ip: str) -> list[dict]:
