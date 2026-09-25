@@ -19,6 +19,7 @@ rsync -a --delete \
     --exclude '__pycache__' \
     --exclude '*.egg-info' \
     --exclude '*.pyc' \
+    --exclude '*_apikey.txt' \
     ./ "$VM:$DEST/"
 
 echo ">> Installing on $VM"
