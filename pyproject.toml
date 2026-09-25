@@ -14,6 +14,7 @@ build-backend = "setuptools.build_meta"
 [project.scripts]
 face = "face.face:main"
 hiney = "hiney.hiney:main"
+hands = "hands.hands:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

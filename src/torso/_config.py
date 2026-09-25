@@ -22,6 +22,10 @@ def load_config(config_file: Path = DEFAULT_CONFIG) -> Config:
     with config_file.open() as f:
         root_conf = yaml.safe_load(f)
 
+    # Top-level keys starting with "_" hold tool metadata (like hands' _dhcp
+    # block), not groups.
+    root_conf = {k: v for k, v in root_conf.items() if not k.startswith("_")}
+
     # Normalize
     for group_name, group in root_conf.items():
         LOG.info(f"- Group {group_name}")
