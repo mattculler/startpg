@@ -60,4 +60,4 @@ EOF
 )
 ssh -t "$VM" "$remote_install"
 
-echo ">> Done. face serves on http://$IP:5000/ ; hiney runs every 5 min."
+echo ">> Done. face serves on http://$IP/ ; hiney runs every 5 min."
