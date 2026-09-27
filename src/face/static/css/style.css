@@ -14,30 +14,30 @@ html, body {
   margin: 5px;
 }
 
-/* Hosts are cards, flowing left to right into two columns once the screen
- * is wide enough, and stacked in one on a phone. */
+/* Hosts are cards, stacked in one column on a phone. Once the screen is wide
+ * enough they flow down two balanced columns instead of across rows, so a
+ * collapsed card leaves no gap: the cards after it move up, and across into
+ * the other column if that keeps the group shorter. */
 .grouphosts {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
   padding: 10px;
 }
 
 @media (min-width: 700px) {
   .grouphosts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    columns: 2;
+    column-gap: 10px;
   }
 }
 
 .machine {
   background: tan;
   padding: 15px;
+  margin-bottom: 10px;
+  break-inside: avoid;  /* never split a card between the columns */
 }
 
-/* Cards in a row share its height, except a collapsed one, which would
- * otherwise stretch into a tall empty box beside an open neighbour. */
-.machine.collapsed {
-  align-self: start;
+.machine:last-child {
+  margin-bottom: 0;
 }
 
 .machinename {
