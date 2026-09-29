@@ -450,7 +450,11 @@ class Sync:
             for res, same in lookalikes:
                 print(f"\nThe ignored reservation {link.show()} is gone, but")
                 print(f"  {show_res(res)} has the same {same}.")
-                if confirm("  Keep ignoring it under its new MAC?", True):
+                choices = [
+                    ("y", "yes: keep ignoring it"),
+                    ("n", "no: forget the old one, and treat this as a new reservation"),
+                ]
+                if menu("  Same device with a new MAC?", choices, "y") == "y":
                     self.claim(link, res)
                     return
             link.unlink()
@@ -462,7 +466,11 @@ class Sync:
         show_host("The host, in startpg.yaml:", link.host, self.host(link))
         for res, same in lookalikes:
             show_reservation(f"A new reservation with the same {same}, from the router:", res)
-            if confirm("  Is it the same device with a new MAC?", True):
+            choices = [
+                ("y", f"yes: link {link.host} to it instead"),
+                ("n", f"no: treat this as a new reservation, and decide what to do about {link.host}"),
+            ]
+            if menu("  Same device with a new MAC?", choices, "y") == "y":
                 self.claim(link, res)
                 return
 
