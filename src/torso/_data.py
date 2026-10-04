@@ -59,11 +59,32 @@ class Service:
             return str(self.last_check_status)
         return "up"
 
+@dataclass
+class Section:
+    """Services the page shows together: a host's own, or ones sharing a name.
+
+    The SSH ones show as badges on the section's title line, and the rest are
+    listed under it.
+    """
+    name: str | None
+    ssh: list[Service] = field(default_factory=list)
+    links: list[Service] = field(default_factory=list)
+
 @dataclass 
 class Host:
     name: str
     hostname: str | None
     services: list[Service] = field(default_factory=list)
+
+    @property
+    def sections(self) -> list[Section]:
+        """The host's own (unnamed) services, then each name's in turn, in the
+        order the names first appear."""
+        by_name = {None: Section(None)}
+        for service in self.services:
+            section = by_name.setdefault(service.name, Section(service.name))
+            (section.ssh if service.is_ssh else section.links).append(service)
+        return list(by_name.values())
 
 @dataclass
 class Group:

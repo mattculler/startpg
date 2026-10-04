@@ -19,6 +19,13 @@
       <span class="ssh ssh-{{ status_class(service) }}" title="{{ service.url.human_repr() }} - {{ service.status_label }}{% if service.last_check_info %} ({{ service.last_check_info }}){% endif %}"><span class="sshbadge">SSH</span>{% if service.ssh_port_suffix %}<span class="sshport">{{ service.ssh_port_suffix }}</span>{% endif %}</span>
     {%- endmacro %}
 
+    {% macro link(service) -%}
+      <div class="service">
+        <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank">{{ service.url.human_repr() }}</a>
+        <span class="status status-{{ status_class(service) }}"{% if service.last_check_info %} title="{{ service.last_check_info }}"{% endif %}>{{ service.status_label }}</span>
+      </div>
+    {%- endmacro %}
+
     {% for group_name, group in groups.items() %}
     <div class="machinegroup{% if group_name in collapsed_groups %} collapsed{% endif %}"
          data-group="{{ group_name }}">
@@ -28,19 +35,22 @@
           {% set host_key = group_name ~ "/" ~ host_name_display %}
           <div class="machine{% if host_key in collapsed_hosts %} collapsed{% endif %}"
                data-host="{{ host_key }}">
+            {# The host's own services, then any named ones under their name,
+               given once: an IPMI port's, say. #}
+            {% set own, named = host.sections[0], host.sections[1:] %}
             <span class="machinename">{{ host_name_display }}</span>
             <span class="titlessh">
-              {% for service in host.services if service.is_ssh %}
-                {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
-                {{ ssh_badge(service) }}
-              {% endfor %}
+              {% for service in own.ssh %}{{ ssh_badge(service) }} {% endfor %}
             </span>
             <div class="services">
-              {% for service in host.services if not service.is_ssh %}
-                <div class="service">
-                  {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
-                  <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank">{{ service.url.human_repr() }}</a>
-                  <span class="status status-{{ status_class(service) }}"{% if service.last_check_info %} title="{{ service.last_check_info }}"{% endif %}>{{ service.status_label }}</span>
+              {% for service in own.links %}{{ link(service) }}{% endfor %}
+              {% for section in named %}
+                <div class="servicegroup">
+                  <div class="servicegrouptitle">
+                    <span class="servicegroupname">{{ section.name }}</span>
+                    {% for service in section.ssh %}{{ ssh_badge(service) }} {% endfor %}
+                  </div>
+                  {% for service in section.links %}{{ link(service) }}{% endfor %}
                 </div>
               {% endfor %}
             </div>

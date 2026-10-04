@@ -45,8 +45,13 @@ html, body {
   font-size: larger;
 }
 
-.servicename {
+/* Services sharing a name sit under it, given once. */
+.servicegroupname {
   font-size: smaller;
+}
+
+.servicegroup .service {
+  margin-left: 1em;
 }
 
 .status {
