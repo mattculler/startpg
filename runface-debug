@@ -1,4 +1,15 @@
 #!/bin/sh
+# Run face on Flask's dev server, with its reloader and debugger. That
+# serves Flask's interactive debugger too, so it listens on localhost only
+# unless you pass --lan to serve the whole local network, say to try the
+# page from a phone.
+
+host=127.0.0.1
+case "${1-}" in
+    "") ;;
+    --lan) host=0.0.0.0 ;;
+    *) echo "usage: $0 [--lan]" >&2; exit 2 ;;
+esac
 
 if [ "`which python3`" = /usr/bin/python3 ]
 then
@@ -9,5 +20,8 @@ fi
 sudo mkdir -v /run/startpg
 sudo chown -c /run/startpg --reference=$0
 
-# Localhost only: --debug serves Flask's interactive debugger.
-flask --app face.face run --debug
+if [ "$host" = 0.0.0.0 ]
+then
+    echo "Serving the whole network, Flask's debugger included"
+fi
+flask --app face.face run --debug --host "$host"

@@ -45,6 +45,8 @@ uv pip install -e .
 
 Pull up your browser and go to localhost:5000, you'll see question marks after the URLs - no status checks have been run yet.
 
+`./runface-debug --lan` serves it to your whole local network instead, say to try it from your phone.
+
 To run status checks, in another terminal:
 
 ```sh
