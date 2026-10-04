@@ -38,17 +38,17 @@
             {# The host's own services, then any named ones under their name,
                given once: an IPMI port's, say. #}
             {% set own, named = host.sections[0], host.sections[1:] %}
-            <span class="machinename">{{ host_name_display }}</span>
-            <span class="titlessh">
-              {% for service in own.ssh %}{{ ssh_badge(service) }} {% endfor %}
-            </span>
+            <div class="machinetitle">
+              <span class="machinename">{{ host_name_display }}</span>
+              {% for service in own.ssh %}{{ ssh_badge(service) }}{% endfor %}
+            </div>
             <div class="services">
               {% for service in own.links %}{{ link(service) }}{% endfor %}
               {% for section in named %}
                 <div class="servicegroup">
                   <div class="servicegrouptitle">
                     <span class="servicegroupname">{{ section.name }}</span>
-                    {% for service in section.ssh %}{{ ssh_badge(service) }} {% endfor %}
+                    {% for service in section.ssh %}{{ ssh_badge(service) }}{% endfor %}
                   </div>
                   {% for service in section.links %}{{ link(service) }}{% endfor %}
                 </div>

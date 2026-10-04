@@ -94,7 +94,7 @@ html, body {
 }
 
 .machinegroup.collapsed > .machinegroupname::before,
-.machine.collapsed > .machinename::before {
+.machine.collapsed .machinename::before {
   border-left: 0.42em solid currentColor;
   border-right: 0;
   border-top: 0.32em solid transparent;
@@ -105,16 +105,21 @@ html, body {
 .service { overflow-wrap: anywhere; }
 
 .machinegroup.collapsed .grouphosts,
-.machine.collapsed .titlessh,
+.machine.collapsed .machinetitle .ssh,
 .machine.collapsed .services {
   display: none;
 }
 
 /* SSH endpoints render as a labelled badge rather than a (useless) link, on
- * the host's title line. The port tags along outside the badge, and only when
- * it isn't the usual 22. */
-.titlessh {
-  margin-left: 0.4em;
+ * the title line of the host or name they belong to, centred on the title's
+ * height. The port tags along outside the badge, and only when it isn't the
+ * usual 22. */
+.machinetitle,
+.servicegrouptitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.4em;
 }
 
 .ssh {
