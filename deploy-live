@@ -17,7 +17,10 @@ DEST=/opt/startpg
 VM="$RUN_USER@$IP"
 
 echo ">> Ensuring $DEST exists on $VM"
-ssh -t "$VM" "sudo mkdir -p $DEST && sudo chown $RUN_USER:$RUN_GROUP $DEST"
+# Only the first deploy needs sudo for this; after that $DEST is the deploy
+# user's own. sudo asks for the password afresh in every ssh session, so
+# skipping it here leaves the install below as the only prompt.
+ssh -t "$VM" "[ -d $DEST ] && [ -w $DEST ] || { sudo mkdir -p $DEST && sudo chown $RUN_USER:$RUN_GROUP $DEST; }"
 
 echo ">> Syncing source to $VM:$DEST"
 rsync -a --delete \
