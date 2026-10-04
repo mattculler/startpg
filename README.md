@@ -1,7 +1,10 @@
 startpg
 -------
 
-![startpg's page: hosts as cards in groups, each service's link with its status, and SSH badges](docs/screenshot.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
+  <img alt="startpg's page: hosts as cards in groups, each service's link with its status, and SSH badges" src="docs/screenshot.png">
+</picture>
 
 Serve a personal homepage that shows the status of all your network services.  Checks whether the addresses are up from a small backend.  For use on your local network only, don't put this on the internet.
 
