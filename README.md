@@ -185,3 +185,10 @@ todo
 ----
 - Add option to generate and download ssh configs
 - Link to drivecanary
+
+License
+-------
+
+MIT, see `LICENSE`. The IBM Plex fonts in `src/face/static/fonts` are
+copyright IBM Corp. and licensed under the SIL Open Font License 1.1, which
+is in `OFL.txt` beside them.

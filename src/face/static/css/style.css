@@ -1,38 +1,179 @@
+/* IBM Plex, vendored in static/fonts under the SIL Open Font License
+ * (OFL.txt there), so the page needs nothing from the internet. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/IBMPlexSans-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/IBMPlexMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/IBMPlexMono-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/IBMPlexMono-SemiBold.woff2") format("woff2");
+}
+
+:root {
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "DejaVu Sans Mono", monospace;
+
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --line: #e1e4e9;
+  --text: #1b1f24;
+  --muted: #69717c;
+  --faint: #a3a9b2;
+  --link: #1f5fbf;
+  --accent: #0e8a6a;
+  --up: #1f8a3c;
+  --down: #d1242f;
+  --off: #9aa1ab;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1116;
+    --card: #161b22;
+    --line: #2a313b;
+    --text: #e6eaef;
+    --muted: #8d96a0;
+    --faint: #5c6570;
+    --link: #79b0ff;
+    --accent: #3ddc97;
+    --up: #3fb950;
+    --down: #ff6b6b;
+    --off: #6b7380;
+  }
+}
+
 html, body {
   margin: 0;
   padding: 0;
 }
 
-.machinegroupname {
-  margin-bottom: 0;
-  padding-bottom: 0;
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 var(--sans);
+  padding: 0 20px 32px;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* A slim header: the name, and a tally of what's up and what isn't. */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding: 22px 2px 20px;
+  font-family: var(--mono);
+}
+
+.brand {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* A terminal's block cursor after the name. */
+.brand::after {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 0.2em;
+  vertical-align: -0.18em;
+  background: var(--accent);
+}
+
+.tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.count::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  vertical-align: 0.05em;
+  background: var(--off);
+}
+
+.count-up::before { background: var(--up); }
+.count-down { color: var(--down); }
+.count-down::before { background: var(--down); }
+.count-unchecked::before { background: none; box-shadow: inset 0 0 0 1.5px var(--off); }
+
+/* Groups are console-style headings with a rule running out to the right,
+ * over their hosts' cards. */
 .machinegroup {
-  background: rosybrown;
-  padding: 5px;
-  margin: 5px;
+  margin-bottom: 30px;
+}
+
+.machinegroupname {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  font: 500 12px/1.2 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.machinegroupname::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }
 
 /* Hosts are cards, stacked in one column on a phone. Once the screen is wide
  * enough they flow down two balanced columns instead of across rows, so a
  * collapsed card leaves no gap: the cards after it move up, and across into
  * the other column if that keeps the group shorter. */
-.grouphosts {
-  padding: 10px;
-}
-
 @media (min-width: 700px) {
   .grouphosts {
     columns: 2;
-    column-gap: 10px;
+    column-gap: 14px;
   }
 }
 
 .machine {
-  background: tan;
-  padding: 15px;
-  margin-bottom: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 13px 16px 12px;
+  margin-bottom: 14px;
   break-inside: avoid;  /* never split a card between the columns */
 }
 
@@ -40,34 +181,22 @@ html, body {
   margin-bottom: 0;
 }
 
+/* SSH badges ride on the title line of the host or name they belong to,
+ * centred on the title's height. */
+.machinetitle,
+.servicegrouptitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+}
+
 .machinename {
-  font-style: italic;
-  font-size: larger;
+  font-weight: 600;
+  font-size: 15.5px;
+  letter-spacing: -0.005em;
 }
-
-/* Services sharing a name sit under it, given once. */
-.servicegroupname {
-  font-size: smaller;
-}
-
-.servicegroup .service {
-  margin-left: 1em;
-}
-
-.status {
-  font-size: smaller;
-  margin-left: 4px;
-}
-
-.status-up { color: green; }
-.status-down { color: red; font-weight: bold; }
-.status-unchecked,
-.status-unknown { color: gray; }
-
-
-/* Not-checked services stay clickable, but struck through so it's obvious at
- * a glance that the status next to them isn't being verified. */
-.ip.nocheck { text-decoration: line-through; }
 
 /* Click a group or host name to collapse it. */
 .machinegroupname,
@@ -76,33 +205,28 @@ html, body {
   user-select: none;
 }
 
-/* The marker is drawn with borders rather than set as a font glyph. The
- * Unicode "small triangle" codepoints carry very little ink and fall back to
- * wildly different sizes across mobile fonts, which is how they ended up
- * microscopic on a phone. Borders scale predictably with the font size. */
+/* The chevron is drawn with borders rather than set as a font glyph: the
+ * Unicode triangles carry very little ink and fall back to wildly different
+ * sizes across mobile fonts, which is how markers ended up microscopic on a
+ * phone. Borders scale predictably with the font size. */
 .machinegroupname::before,
 .machinename::before {
   content: "";
   display: inline-block;
-  width: 0;
-  height: 0;
-  margin-right: 0.4em;
-  vertical-align: middle;
-  border-left: 0.32em solid transparent;
-  border-right: 0.32em solid transparent;
-  border-top: 0.42em solid currentColor;
+  flex: none;
+  width: 0.38em;
+  height: 0.38em;
+  margin: 0 0.62em 0 0.08em;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-0.18em) rotate(45deg);
+  opacity: 0.55;
 }
 
 .machinegroup.collapsed > .machinegroupname::before,
 .machine.collapsed .machinename::before {
-  border-left: 0.42em solid currentColor;
-  border-right: 0;
-  border-top: 0.32em solid transparent;
-  border-bottom: 0.32em solid transparent;
+  transform: rotate(-45deg);
 }
-
-/* Long URLs shouldn't be able to push the layout sideways on a narrow screen. */
-.service { overflow-wrap: anywhere; }
 
 .machinegroup.collapsed .grouphosts,
 .machine.collapsed .machinetitle .ssh,
@@ -110,43 +234,173 @@ html, body {
   display: none;
 }
 
-/* SSH endpoints render as a labelled badge rather than a (useless) link, on
- * the title line of the host or name they belong to, centred on the title's
- * height. The port tags along outside the badge, and only when it isn't the
- * usual 22. */
-.machinetitle,
-.servicegrouptitle {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: 0.4em;
+.services {
+  margin-top: 8px;
 }
 
+/* One service a row: a status light, the link, and its status out at the
+ * right edge. */
+.service {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 2px 0;
+  font: 13px/1.5 var(--mono);
+  overflow-wrap: anywhere;  /* long URLs mustn't push the layout sideways */
+}
+
+.service::before {
+  content: "";
+  flex: none;
+  align-self: center;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--off);
+}
+
+.service-up::before {
+  background: var(--up);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--up) 16%, transparent);
+}
+
+.service-down::before {
+  background: var(--down);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--down) 18%, transparent);
+}
+
+.service-unchecked::before {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--off);
+}
+
+.ip {
+  min-width: 0;
+  color: var(--link);
+  text-decoration: none;
+}
+
+.ip:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ip:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.ip .scheme {
+  color: var(--faint);
+}
+
+/* Not-checked services stay clickable, but struck through and dimmed so it's
+ * obvious at a glance that the status next to them isn't being verified. */
+.ip.nocheck {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--faint);
+}
+
+.status {
+  margin-left: auto;
+  padding-left: 12px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.service-up .status { color: var(--up); }
+.service-down .status { color: var(--down); font-weight: 600; }
+/* A not-checked service's reason gets its own line under the link, rather
+ * than squeezing the URL. */
+.service-unchecked {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+
+.service-unchecked .status {
+  flex-basis: 100%;
+  margin-left: 17px;
+  padding-left: 0;
+  text-align: left;
+  font-size: 11.5px;
+}
+
+/* Services sharing a name hang off it, given once, on a tree line. */
+.servicegroup {
+  margin-top: 8px;
+}
+
+.servicegrouptitle {
+  margin-bottom: 3px;
+}
+
+.servicegroupname {
+  font: 500 11px/1.4 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.servicegroup .service {
+  margin-left: 3px;
+  padding-left: 13px;
+  border-left: 1px solid var(--line);
+}
+
+/* SSH endpoints render as a status chip rather than a (useless) link. The
+ * port tags along outside the chip, and only when it isn't the usual 22. */
 .ssh {
-  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.08em;
   white-space: nowrap;
+  cursor: default;
 }
 
 .sshbadge {
-  display: inline-block;
-  padding: 0.05em 0.45em;
-  border: 2px solid currentColor;
-  border-radius: 0.45em;
-  corner-shape: squircle;  /* a true superellipse where the browser has it */
-  font-family: monospace;
-  font-weight: bold;
-  font-size: 0.8em;
-  letter-spacing: 0.08em;
-  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px 3px 6px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.sshbadge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .sshport {
-  font-family: monospace;
-  font-size: 0.8em;
-  margin-left: 0.25em;
+  color: var(--muted);
+  letter-spacing: 0.02em;
 }
 
-.ssh-up { color: green; }
-.ssh-down { color: red; }
+.ssh-up { color: var(--up); }
+.ssh-down { color: var(--down); }
 .ssh-unchecked,
-.ssh-unknown { color: gray; }
+.ssh-unknown { color: var(--off); }
+
+.ssh-unchecked .sshbadge::before {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+@media (max-width: 699px) {
+  body {
+    padding: 0 12px 24px;
+  }
+
+  .topbar {
+    padding: 16px 2px 16px;
+  }
+}

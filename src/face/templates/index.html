@@ -5,6 +5,7 @@
     <!-- Without this a phone lays the page out at ~980px and scales the whole
          thing down, which shrinks everything into illegibility. -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <title>Local Services</title>
     <link rel="stylesheet" href="static/css/style.css">
   </head>
@@ -19,12 +20,29 @@
       <span class="ssh ssh-{{ status_class(service) }}" title="{{ service.url.human_repr() }} - {{ service.status_label }}{% if service.last_check_info %} ({{ service.last_check_info }}){% endif %}"><span class="sshbadge">SSH</span>{% if service.ssh_port_suffix %}<span class="sshport">{{ service.ssh_port_suffix }}</span>{% endif %}</span>
     {%- endmacro %}
 
+    {# The URL as a link, its scheme dimmed and the trailing slash dropped. #}
     {% macro link(service) -%}
-      <div class="service">
-        <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank">{{ service.url.human_repr() }}</a>
-        <span class="status status-{{ status_class(service) }}"{% if service.last_check_info %} title="{{ service.last_check_info }}"{% endif %}>{{ service.status_label }}</span>
+      {% set address = service.url.human_repr()[service.url.scheme|length + 3:] %}
+      <div class="service service-{{ status_class(service) }}">
+        <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank"><span class="scheme">{{ service.url.scheme }}://</span>{{ address[:-1] if address.endswith('/') else address }}</a>
+        <span class="status"{% if service.last_check_info %} title="{{ service.last_check_info }}"{% endif %}>{{ service.status_label }}</span>
       </div>
     {%- endmacro %}
+
+    {% set tally = namespace(up=0, down=0, unchecked=0) %}
+    {% for group in groups.values() %}{% for host in group.hosts.values() %}{% for service in host.services %}
+      {% set state = status_class(service) %}
+      {% if state == 'up' %}{% set tally.up = tally.up + 1 %}{% elif state == 'down' %}{% set tally.down = tally.down + 1 %}{% elif state == 'unchecked' %}{% set tally.unchecked = tally.unchecked + 1 %}{% endif %}
+    {% endfor %}{% endfor %}{% endfor %}
+
+    <header class="topbar">
+      <span class="brand">startpg</span>
+      <span class="tally">
+        <span class="count count-up">{{ tally.up }} up</span>
+        {% if tally.down %}<span class="count count-down">{{ tally.down }} down</span>{% endif %}
+        {% if tally.unchecked %}<span class="count count-unchecked">{{ tally.unchecked }} not checked</span>{% endif %}
+      </span>
+    </header>
 
     {% for group_name, group in groups.items() %}
     <div class="machinegroup{% if group_name in collapsed_groups %} collapsed{% endif %}"
