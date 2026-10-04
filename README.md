@@ -1,15 +1,68 @@
 startpg
 -------
 
-Are you concerned about the security of your shit?
+Serve a personal homepage that shows the status of all your network services.  Checks whether the addresses are up from a small backend.  For use on your local network only, don't put this on the internet.
+
+Prerequisites
+-------------
+
+I tested with the versions below, others may work:
+
+- Debian 13
+- python3.13
+- uv 0.12.13
+
+Quickstart
+----------
+
+After cloning this repo, set up your config:
+
+```sh
+mkdir config
+cp startpg.example.yaml config/startpg.yaml
+vi config/startpg.yaml
+```
+
+The example yaml shows you how to write your own, but if you wanted the smallest possible yaml that watched a single service it would look like this:
+
+```yaml
+Group:
+  Site:
+    services:
+      - url: https://google.com
+```
+
+After editing your config:
+
+```sh
+uv v
+. .venv/bin/activate
+uv pip install -e .
+./runface-debug
+```
+
+Pull up your browser and go to localhost:5000, you'll see question marks after the URLs - no status checks have been run yet.
+
+To run status checks, in another terminal:
+
+```sh
+cd $startpg_repo
+uv run hiney
+```
+
+Go back to :5000 in your browser, refresh, and you'll see each site now has a status.
+
+Architecture
+------------
 
 - face - Frontend (webserver) process
 - torso - Lib shared between face and hiney
 - hiney - Backend (monitor, daemon) process
-- hands - Interactive tool that syncs startpg.yaml with the router's DHCP reservations
+- hands - Interactive tool that syncs startpg.yaml with an Opnsense router's DHCP reservations
 
 Configuration
 -------------
+
 Your site's config lives in `config/`, which this repo ignores:
 
 - `config/startpg.yaml` - the groups, hosts and services on the page. Start
@@ -21,22 +74,34 @@ of its own, with a private remote. Nothing in it can be added to or pushed
 from this repo. On another machine, clone this repo and then clone the config
 repo into `config/`.
 
-Running locally
----------------
-- `./runface-debug` - run the frontend with the Flask dev server + reloader
-- `hiney` - run a one-off status sweep (writes `/run/startpg/spg.db`)
-- `hands` - sync `startpg.yaml` with the router's DHCP reservations (see below)
-
 Running in production
 ---------------------
-Targets a Debian VM running as `mrc:mrc`. Set its address in
-`config/deploy.env`, then:
 
-    ./deploy-live
+Targets a Debian VM.
 
-That rsyncs the source and `config/` to `/opt/startpg`, sets up a uv-managed venv
-(`uv pip install -e .`; uv is auto-installed if missing, avoiding apt's
-~300MB python3-pip), and installs the systemd units in `packaging/systemd/`:
+Create a plain text file in your repo's config dir `config/deploy.env` that looks like
+
+```
+IP=x.x.x.x
+USER=me
+GROUP=me
+```
+
+Once created, run:
+
+```sh
+./deploy-live
+```
+
+Now startpg should be live on your VM at port 80.
+
+Production run architecture
+---------------------------
+
+`deploy-live` rsyncs the source and `config/` to `/opt/startpg`, sets up a 
+uv-managed venv (`uv pip install -e .`; uv is auto-installed if missing, 
+avoiding apt's ~300MB python3-pip), and installs the systemd units in 
+`packaging/systemd/`:
 
 - `face.service` - long-running frontend (Flask dev server, LAN-only)
 - `hiney.service` + `hiney.timer` - status sweep every 5 minutes
@@ -49,46 +114,45 @@ on the VM, which goes through `OUTPUT`) would see a refused connection and
 report startpg itself as down. Binding 80 for real keeps every vantage point
 in agreement. Run `face` by hand and it falls back to port 5000.
 
+Both units use `RuntimeDirectory=startpg` (with `RuntimeDirectoryPreserve=yes`,
+since the shared `/run/startpg` DB outlives hiney's one-shot runs). The DB lives
+on tmpfs and is rebuilt by hiney each cycle, so it's fine to lose on reboot.
+
+Persistent UI collapse
+----------------------
+
 Clicking a group or host name collapses it. That state is persisted server-side
 in `/var/lib/startpg/collapsed.json` (via `StateDirectory=startpg`) and rendered
 into the HTML, so it survives reloads and reboots, applies across every browser
 and device, and never flashes open on load. It's global rather than per-user,
 which suits a single-user homepage.
 
-Both units use `RuntimeDirectory=startpg` (with `RuntimeDirectoryPreserve=yes`,
-since the shared `/run/startpg` DB outlives hiney's one-shot runs). The DB lives
-on tmpfs and is rebuilt by hiney each cycle, so it's fine to lose on reboot.
+Syncing with DHCP reservations (`hands`)
+----------------------------------------
 
-Syncing with DHCP reservations
-------------------------------
-`hands` asks the OPNsense router for its static DHCP reservations and walks
-you through reconciling `startpg.yaml` with them:
+Once you've at least set up the above:
 
-- new reservations: link one to an existing host (and maybe rename the host
-  after the reservation's description), add it as a new host, or ignore it for
-  good
-- changed ones: rewrite the URLs that use the old IP, follow a hostname change,
-  rename the host after a new description
-- a device that got a new MAC but kept its IP or hostname (a rebuilt VM, a
-  service moved to new hardware): carry its link over
-- ones that are gone: relink the host to another reservation, unlink it, stop
-  checking it, or delete it
+```sh
+uv run hands
+```
 
-Anything can be skipped, and comes up again next time. It shows the diff and
-asks before writing; commit the result and `./deploy-live`.
+The `hands` tool asks an OPNsense router for its static DHCP reservations and
+walks the user through reconciling `startpg.yaml` with them.  Skipped items will
+come up again the next time `hands` is run, ignored will not.  Keeps its state
+in a section it adds to `startpg.yaml`.  It finds the router at `router:` under
+`_dhcp:` in the config.
 
-Adding a host (or a second interface, like an IPMI port, to one) probes its IP
-on the common ports (22, 80, 443, 5000, 8000, 8006, 8080) plus every port
-another service in the yaml uses, shows which are open, and offers them as
-services.
-
-It finds the router at `router:` under `_dhcp:` in the config, and reads its
-API key from the directory you run it in:
+To create a keyfile in the Opnsense UI:
 
 1. System > Access > Users: add a `startpg` user with just the
    "Services: ISC DHCPv4: Leases" privilege.
 2. Click the user's API key button and drop the downloaded `*_apikey.txt` into
    the project directory. It's gitignored, and `deploy-live` leaves it behind.
+
+Adding a host (or a second interface, like an IPMI port, to one) probes its IP
+on the common ports (22, 80, 443, 5000, 8000, 8006, 8080) plus every port
+another service in the yaml uses, shows which are open, and offers them as
+services.
 
 The router's self-signed TLS cert is pinned by its SHA-256, as `cert_sha256:`
 under `_dhcp:`. The first run prints the fingerprint; check it against what a
@@ -101,14 +165,9 @@ host's `dhcp:` list holds its reservations (mac, ip, hostname, description) as
 of the last sync, which is how the next sync tells what changed, and
 `_dhcp: ignore:` holds the ones you've ignored. Top-level keys starting with
 `_` aren't groups. hands rewrites the whole file with PyYAML, so comments in it
-don't survive; keep notes here instead.
+don't survive.
 
 todo
 ----
 - Add option to generate and download ssh configs
-- Try HTTP basic auth for some of these devices and add it if they work.  See if I can implement other auth methods
-- Add to Networking: the new smart switch, the 10g uplink switch, and any other networking equipment with a status page
-- Incorporate OOB management interfaces into their respective hosts.  Should be oob: and oob-ssh: keys for each, with auth info
-- Not sure where these go:
-  - nginx (How to include when I have it set to drop connections not from given source domains?)
-  - IP cameras
+- Link to drivecanary

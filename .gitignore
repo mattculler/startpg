@@ -6,3 +6,4 @@ venv
 *_apikey.txt
 # Site config (startpg.yaml, deploy.env), kept in its own private repo
 /config/
+uv.lock
