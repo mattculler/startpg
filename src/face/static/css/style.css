@@ -100,12 +100,18 @@ html, body {
 .service { overflow-wrap: anywhere; }
 
 .machinegroup.collapsed .grouphosts,
+.machine.collapsed .titlessh,
 .machine.collapsed .services {
   display: none;
 }
 
-/* SSH endpoints render as a labelled badge rather than a (useless) link.
- * The port tags along outside the badge, and only when it isn't the usual 22. */
+/* SSH endpoints render as a labelled badge rather than a (useless) link, on
+ * the host's title line. The port tags along outside the badge, and only when
+ * it isn't the usual 22. */
+.titlessh {
+  margin-left: 0.4em;
+}
+
 .ssh {
   cursor: default;
   white-space: nowrap;

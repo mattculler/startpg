@@ -9,6 +9,16 @@
     <link rel="stylesheet" href="static/css/style.css">
   </head>
   <body>
+    {% macro status_class(service) -%}
+      {{ 'unchecked' if not service.check else 'unknown' if service.is_up is none else 'up' if service.is_up else 'down' }}
+    {%- endmacro %}
+
+    {# No link for ssh: ssh:// isn't much use to a browser. A green/red SSH
+       badge instead, with the port if it's unusual. #}
+    {% macro ssh_badge(service) -%}
+      <span class="ssh ssh-{{ status_class(service) }}" title="{{ service.url.human_repr() }} - {{ service.status_label }}{% if service.last_check_info %} ({{ service.last_check_info }}){% endif %}"><span class="sshbadge">SSH</span>{% if service.ssh_port_suffix %}<span class="sshport">{{ service.ssh_port_suffix }}</span>{% endif %}</span>
+    {%- endmacro %}
+
     {% for group_name, group in groups.items() %}
     <div class="machinegroup{% if group_name in collapsed_groups %} collapsed{% endif %}"
          data-group="{{ group_name }}">
@@ -19,20 +29,18 @@
           <div class="machine{% if host_key in collapsed_hosts %} collapsed{% endif %}"
                data-host="{{ host_key }}">
             <span class="machinename">{{ host_name_display }}</span>
+            <span class="titlessh">
+              {% for service in host.services if service.is_ssh %}
+                {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
+                {{ ssh_badge(service) }}
+              {% endfor %}
+            </span>
             <div class="services">
-              {% for service in host.services %}
-                {% set cls = 'unchecked' if not service.check else 'unknown' if service.is_up is none else 'up' if service.is_up else 'down' %}
+              {% for service in host.services if not service.is_ssh %}
                 <div class="service">
-                  {% if service.is_ssh %}
-                    {# No link: ssh:// isn't much use to a browser. A green/red
-                       SSH badge instead, with the port if it's unusual. #}
-                    {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
-                    <span class="ssh ssh-{{ cls }}" title="{{ service.url.human_repr() }} - {{ service.status_label }}{% if service.last_check_info %} ({{ service.last_check_info }}){% endif %}"><span class="sshbadge">SSH</span>{% if service.ssh_port_suffix %}<span class="sshport">{{ service.ssh_port_suffix }}</span>{% endif %}</span>
-                  {% else %}
-                    {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
-                    <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank">{{ service.url.human_repr() }}</a>
-                    <span class="status status-{{ cls }}"{% if service.last_check_info %} title="{{ service.last_check_info }}"{% endif %}>{{ service.status_label }}</span>
-                  {% endif %}
+                  {% if service.name %}<span class="servicename">{{ service.name }}</span>{% endif %}
+                  <a href="{{ service.url }}" class="ip{% if not service.check %} nocheck{% endif %}" target="_blank">{{ service.url.human_repr() }}</a>
+                  <span class="status status-{{ status_class(service) }}"{% if service.last_check_info %} title="{{ service.last_check_info }}"{% endif %}>{{ service.status_label }}</span>
                 </div>
               {% endfor %}
             </div>
