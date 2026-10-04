@@ -1,0 +1,59 @@
+# The made-up config pictured in docs/screenshot.png; docs/screenshot.py
+# renders it. Documentation addresses (192.0.2.0/24) and example domains only.
+
+Servers:
+  NAS:
+    hostname: nas
+    services:
+      - url: https://192.0.2.10:5001
+      - url: ssh://192.0.2.10:22
+  Hypervisor:
+    hostname: pve
+    services:
+      - url: https://192.0.2.11:8006
+      - name: IPMI
+        url: https://192.0.2.31
+      - url: ssh://192.0.2.11:22
+      - name: IPMI
+        url: ssh://192.0.2.31:22
+  Media server:
+    hostname: jellyfin
+    services:
+      - url: http://192.0.2.12:8096
+      - url: ssh://192.0.2.12:22
+  Backup box:
+    hostname: backup
+    services:
+      - url: https://192.0.2.13:8007
+      - url: ssh://192.0.2.13:22
+    nocheck: powered off between backups
+
+Websites:
+  Blog:
+    services:
+      - url: http://example.com
+        www: true
+      - name: admin
+        url: http://192.0.2.20:8080
+  Wiki:
+    services:
+      - url: https://wiki.example.org
+      - url: ssh://192.0.2.21:2222
+
+Networking:
+  Router:
+    services:
+      - url: http://192.0.2.1
+        https: true
+      - url: ssh://192.0.2.1:22
+  Switch:
+    services:
+      - url: http://192.0.2.2
+  Access point:
+    services:
+      - url: http://192.0.2.3
+
+Smart home:
+  Home Assistant:
+    services:
+      - url: http://192.0.2.40:8123
