@@ -77,7 +77,9 @@ repo into `config/`.
 Running in production
 ---------------------
 
-Targets a Debian VM.
+Targets a Debian 13 VM, which needs ssh access as the user you configure below.  That
+user will also need sudo.  It will also need internet access unless you've already 
+installed uv.
 
 Create a plain text file in your repo's config dir `config/deploy.env` that looks like
 
@@ -130,7 +132,24 @@ which suits a single-user homepage.
 Syncing with DHCP reservations (`hands`)
 ----------------------------------------
 
-Once you've at least set up the above:
+Once you've got a basic startpg.yaml, you can automatically compare static IP
+mappings on your Opnsense router with the contents of your yaml.
+
+First add the router's IP to the yaml, append a new section like:
+
+```yaml
+_dhcp:
+  router: 192.168.1.1
+```
+
+Then create a keyfile in the Opnsense UI:
+
+1. System > Access > Users: add a `startpg` user with just the
+   "Services: ISC DHCPv4: Leases" privilege.
+2. Click the user's API key button and drop the downloaded `*_apikey.txt` into
+   the project directory. It's gitignored, and `deploy-live` leaves it behind.
+
+Then run it:
 
 ```sh
 uv run hands
@@ -138,16 +157,7 @@ uv run hands
 
 The `hands` tool asks an OPNsense router for its static DHCP reservations and
 walks the user through reconciling `startpg.yaml` with them.  Skipped items will
-come up again the next time `hands` is run, ignored will not.  Keeps its state
-in a section it adds to `startpg.yaml`.  It finds the router at `router:` under
-`_dhcp:` in the config.
-
-To create a keyfile in the Opnsense UI:
-
-1. System > Access > Users: add a `startpg` user with just the
-   "Services: ISC DHCPv4: Leases" privilege.
-2. Click the user's API key button and drop the downloaded `*_apikey.txt` into
-   the project directory. It's gitignored, and `deploy-live` leaves it behind.
+come up again the next time `hands` is run, ignored items will not.
 
 Adding a host (or a second interface, like an IPMI port, to one) probes its IP
 on the common ports (22, 80, 443, 5000, 8000, 8006, 8080) plus every port
@@ -160,7 +170,7 @@ browser shows for the router before pinning it. Only the ISC DHCP backend is
 supported so far; `BACKENDS` in `src/hands/opnsense.py` is where Kea or Dnsmasq
 would slot in.
 
-What hands remembers lives in the yaml but never shows on the page. A linked
+What `hands` remembers lives in the yaml but never shows on the page. A linked
 host's `dhcp:` list holds its reservations (mac, ip, hostname, description) as
 of the last sync, which is how the next sync tells what changed, and
 `_dhcp: ignore:` holds the ones you've ignored. Top-level keys starting with
