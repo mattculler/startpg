@@ -8,6 +8,19 @@ Are you concerned about the security of your shit?
 - hiney - Backend (monitor, daemon) process
 - hands - Interactive tool that syncs startpg.yaml with the router's DHCP reservations
 
+Configuration
+-------------
+Your site's config lives in `config/`, which this repo ignores:
+
+- `config/startpg.yaml` - the groups, hosts and services on the page. Start
+  from `startpg.example.yaml`.
+- `config/deploy.env` - `IP=<the VM's address>`, for `deploy-live`.
+
+To keep the config versioned without publishing it, make `config/` a git repo
+of its own, with a private remote. Nothing in it can be added to or pushed
+from this repo. On another machine, clone this repo and then clone the config
+repo into `config/`.
+
 Running locally
 ---------------
 - `./runface-debug` - run the frontend with the Flask dev server + reloader
@@ -16,11 +29,12 @@ Running locally
 
 Running in production
 ---------------------
-Targets a Debian VM running as `mrc:mrc`. Set the VM in `deploy-live`, then:
+Targets a Debian VM running as `mrc:mrc`. Set its address in
+`config/deploy.env`, then:
 
     ./deploy-live
 
-That rsyncs the source to `/opt/startpg`, sets up a uv-managed venv
+That rsyncs the source and `config/` to `/opt/startpg`, sets up a uv-managed venv
 (`uv pip install -e .`; uv is auto-installed if missing, avoiding apt's
 ~300MB python3-pip), and installs the systemd units in `packaging/systemd/`:
 
@@ -68,15 +82,18 @@ on the common ports (22, 80, 443, 5000, 8000, 8006, 8080) plus every port
 another service in the yaml uses, shows which are open, and offers them as
 services.
 
-It reads the router's API key from the directory you run it in:
+It finds the router at `router:` under `_dhcp:` in the config, and reads its
+API key from the directory you run it in:
 
 1. System > Access > Users: add a `startpg` user with just the
    "Services: ISC DHCPv4: Leases" privilege.
 2. Click the user's API key button and drop the downloaded `*_apikey.txt` into
    the project directory. It's gitignored, and `deploy-live` leaves it behind.
 
-The router's self-signed cert is pinned in `src/hands/opnsense.py`. Only the
-ISC DHCP backend is supported so far; `BACKENDS` there is where Kea or Dnsmasq
+The router's self-signed TLS cert is pinned by its SHA-256, as `cert_sha256:`
+under `_dhcp:`. The first run prints the fingerprint; check it against what a
+browser shows for the router before pinning it. Only the ISC DHCP backend is
+supported so far; `BACKENDS` in `src/hands/opnsense.py` is where Kea or Dnsmasq
 would slot in.
 
 What hands remembers lives in the yaml but never shows on the page. A linked

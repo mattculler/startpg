@@ -9,15 +9,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-ROUTER = "192.168.1.1"
-
-# The router's web GUI serves a self-signed cert (expired since 2020, which
-# OPNsense doesn't mind), so there's no CA to verify it against. We're sending
-# it an API key, so pin the cert instead. If the router ever gets a new one,
-# check its fingerprint against what a browser shows for https://192.168.1.1/
-# before updating this.
-CERT_SHA256 = "0000000000000000000000000000000000000000000000000000000000000000"
-
 TIMEOUT = 10
 
 
@@ -38,7 +29,18 @@ class Reservation:
 
 
 class Api:
-    def __init__(self, key_file: Path):
+    """The router's API, reached at `router` over TLS.
+
+    The router's web GUI serves a self-signed cert as a rule, so there's no CA
+    to verify it against. We're sending it an API key, so the cert is pinned
+    instead, by its SHA-256 (`cert_sha256`). Without a pin, connecting reports
+    the router's fingerprint, to be checked against what a browser shows for
+    the router before pinning it.
+    """
+
+    def __init__(self, key_file: Path, router: str, cert_sha256: str | None):
+        self.router = router
+        self._cert_sha256 = (cert_sha256 or "").replace(":", "").lower()
         # The file as downloaded from System > Access > Users: key=... and
         # secret=... lines.
         fields = {}
@@ -56,16 +58,22 @@ class Api:
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-        conn = http.client.HTTPSConnection(ROUTER, timeout=TIMEOUT, context=ctx)
+        conn = http.client.HTTPSConnection(self.router, timeout=TIMEOUT, context=ctx)
         try:
             # Check the pin before sending anything, the key least of all.
             conn.connect()
             cert = conn.sock.getpeercert(binary_form=True)
             fingerprint = hashlib.sha256(cert).hexdigest()
-            if fingerprint != CERT_SHA256:
+            if not self._cert_sha256:
+                raise ApiError(
+                    f"the router's TLS cert isn't pinned yet. Its SHA-256 is {fingerprint}; "
+                    "if that matches what a browser shows for the router, pin it "
+                    "as cert_sha256 under _dhcp in the config"
+                )
+            if fingerprint != self._cert_sha256:
                 raise ApiError(
                     f"the router's TLS cert has changed (SHA-256 {fingerprint}); "
-                    f"if that's expected, update CERT_SHA256 in {__file__}"
+                    "if that's expected, update cert_sha256 under _dhcp in the config"
                 )
             conn.request(
                 "GET",
@@ -75,7 +83,7 @@ class Api:
             resp = conn.getresponse()
             body = resp.read()
         except OSError as e:
-            raise ApiError(f"couldn't talk to the router at {ROUTER}: {e}") from e
+            raise ApiError(f"couldn't talk to the router at {self.router}: {e}") from e
         finally:
             conn.close()
 

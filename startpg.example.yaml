@@ -1,0 +1,39 @@
+# An example startpg config: copy it to config/startpg.yaml and make it yours.
+# Top-level keys are groups, which hold hosts, which hold services.
+
+Servers:
+  NAS:
+    hostname: nas
+    services:
+      - url: https://192.0.2.10:5001
+      - url: ssh://192.0.2.10:22
+  Hypervisor:
+    hostname: pve
+    services:
+      - url: https://192.0.2.11:8006
+      - url: ssh://192.0.2.11:22
+    # Not checked, with the reason shown on the page. Works on services too.
+    nocheck: down for maintenance
+
+Websites:
+  Blog:
+    services:
+      - url: http://example.com
+        www: true    # also check http://www.example.com
+      - name: admin  # a label shown before the link
+        url: http://192.0.2.20:8080
+        nocheck: only up while I'm working on it
+
+Networking:
+  Router:
+    services:
+      - url: http://192.0.2.1
+        https: true  # also check https://192.0.2.1
+      - url: ssh://192.0.2.1:22
+
+# Settings for hands, which syncs this file with the router's DHCP
+# reservations. Top-level keys starting with _ aren't groups.
+_dhcp:
+  router: 192.0.2.1
+  # The first run of hands prints the router's cert fingerprint to pin here:
+  # cert_sha256: ...

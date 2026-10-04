@@ -5,7 +5,8 @@ import logging
 from yarl import URL
 from torso import Service, Host, Group, Config
 
-DEFAULT_CONFIG = (Path(__file__) / "../../../startpg.yaml").resolve()
+# Site config lives in config/, which the repo ignores; see the README.
+DEFAULT_CONFIG = (Path(__file__) / "../../../config/startpg.yaml").resolve()
 
 LOG = logging.getLogger(__file__)
 
@@ -19,6 +20,10 @@ def _auto_hostname(host_display_name: str, host):
         LOG.info(f"    Set hostname to '{host['hostname']}', from display name")
 
 def load_config(config_file: Path = DEFAULT_CONFIG) -> Config:
+    if not config_file.exists():
+        raise FileNotFoundError(
+            f"no config at {config_file}; start one from startpg.example.yaml"
+        )
     with config_file.open() as f:
         root_conf = yaml.safe_load(f)
 

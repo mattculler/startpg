@@ -4,3 +4,5 @@ venv
 .venv
 # OPNsense API keys, as downloaded from System > Access > Users
 *_apikey.txt
+# Site config (startpg.yaml, deploy.env), kept in its own private repo
+/config/

@@ -3,7 +3,13 @@
 
 set -eu
 
-IP=192.168.1.10
+# The VM's address is site config, so it lives in config/deploy.env.
+if [ ! -f config/deploy.env ]; then
+    echo "deploy-live: put IP=<the VM's address> in config/deploy.env" >&2
+    exit 1
+fi
+. ./config/deploy.env
+
 DEST=/opt/startpg
 RUN_USER=mrc
 RUN_GROUP=mrc

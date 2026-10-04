@@ -692,8 +692,7 @@ def print_diff(before: str, after: str) -> None:
         print(line, end="")
 
 
-def sync(config: Path, reservations: list[Reservation]) -> None:
-    doc = yaml.safe_load(config.read_text())
+def sync(config: Path, doc: dict, reservations: list[Reservation]) -> None:
     before = dump(doc)
     Sync(doc, reservations).run()
     after = dump(doc)
@@ -720,8 +719,20 @@ def main():
             f"in the current directory, found {found}"
         )
 
+    config = DEFAULT_CONFIG
     try:
-        backend = opnsense.find_backend(opnsense.Api(key_files[0]))
+        doc = yaml.safe_load(config.read_text())
+    except OSError as e:
+        sys.exit(f"hands: can't read the config: {e}")
+    # Where the router is, and its pinned cert: see opnsense.Api.
+    settings = doc.get("_dhcp") or {}
+    if not settings.get("router"):
+        sys.exit(f"hands: set the router's address as router under _dhcp in {config}")
+    pin = settings.get("cert_sha256")
+
+    try:
+        api = opnsense.Api(key_files[0], str(settings["router"]), str(pin) if pin else None)
+        backend = opnsense.find_backend(api)
         reservations = backend.reservations()
     except opnsense.ApiError as e:
         sys.exit(f"hands: {e}")
@@ -734,14 +745,14 @@ def main():
             f"than one: {', '.join(dupes)}"
         )
 
-    print(f"Read {len(reservations)} reservations from {backend.name} on {opnsense.ROUTER}.")
+    print(f"Read {len(reservations)} reservations from {backend.name} on {api.router}.")
     try:
         doubt = backend.doubt()
         if doubt:
             print(f"Warning: {doubt}")
             if not confirm("Carry on with its reservations anyway?", False):
                 sys.exit(1)
-        sync(DEFAULT_CONFIG, reservations)
+        sync(config, doc, reservations)
     except (KeyboardInterrupt, EOFError):
         sys.exit("\nAborted; startpg.yaml unchanged.")
 
