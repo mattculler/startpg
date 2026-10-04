@@ -8,8 +8,9 @@ After=network-online.target hiney.service
 
 [Service]
 Type=simple
-User=mrc
-Group=mrc
+# deploy-live fills these in from RUN_USER and RUN_GROUP in config/deploy.env.
+User=@RUN_USER@
+Group=@RUN_GROUP@
 WorkingDirectory=/opt/startpg
 # Serve on the well-known port directly. CAP_NET_BIND_SERVICE lets the
 # unprivileged user bind <1024, so no NAT redirect is needed -- and hiney,

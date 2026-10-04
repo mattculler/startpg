@@ -5,8 +5,9 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=mrc
-Group=mrc
+# deploy-live fills these in from RUN_USER and RUN_GROUP in config/deploy.env.
+User=@RUN_USER@
+Group=@RUN_GROUP@
 WorkingDirectory=/opt/startpg
 ExecStart=/opt/startpg/.venv/bin/hiney
 RuntimeDirectory=startpg

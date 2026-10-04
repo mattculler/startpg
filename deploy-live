@@ -3,16 +3,17 @@
 
 set -eu
 
-# The VM's address is site config, so it lives in config/deploy.env.
+# Site config: the VM's address, and the user and group startpg runs as there.
 if [ ! -f config/deploy.env ]; then
-    echo "deploy-live: put IP=<the VM's address> in config/deploy.env" >&2
+    echo "deploy-live: create config/deploy.env (see the README)" >&2
     exit 1
 fi
 . ./config/deploy.env
+: "${IP:?set IP in config/deploy.env}"
+: "${RUN_USER:?set RUN_USER in config/deploy.env}"
+: "${RUN_GROUP:?set RUN_GROUP in config/deploy.env}"
 
 DEST=/opt/startpg
-RUN_USER=mrc
-RUN_GROUP=mrc
 VM="$RUN_USER@$IP"
 
 echo ">> Ensuring $DEST exists on $VM"
@@ -50,10 +51,12 @@ if [ ! -d .venv ]; then
 fi
 uv pip install --python .venv/bin/python -e .
 
-# Install/refresh the systemd units, then enable the frontend and the timer.
-sudo cp packaging/systemd/face.service /etc/systemd/system/
-sudo cp packaging/systemd/hiney.service /etc/systemd/system/
-sudo cp packaging/systemd/hiney.timer /etc/systemd/system/
+# Install/refresh the systemd units, filling in the user and group they run
+# as, then enable the frontend and the timer.
+for unit in face.service hiney.service hiney.timer; do
+    sed -e "s/@RUN_USER@/$RUN_USER/g" -e "s/@RUN_GROUP@/$RUN_GROUP/g" \
+        "packaging/systemd/\$unit" | sudo tee "/etc/systemd/system/\$unit" >/dev/null
+done
 sudo systemctl daemon-reload
 sudo systemctl enable --now hiney.timer
 sudo systemctl enable face.service

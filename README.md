@@ -85,8 +85,8 @@ Create a plain text file in your repo's config dir `config/deploy.env` that look
 
 ```
 IP=x.x.x.x
-USER=me
-GROUP=me
+RUN_USER=me
+RUN_GROUP=me
 ```
 
 Once created, run:
