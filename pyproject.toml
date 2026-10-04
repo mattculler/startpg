@@ -1,14 +1,18 @@
 [project]
 name = "startpg"
 dynamic = ["version"]
+requires-python = ">=3.12"
+# Floors are the oldest releases that install and work on Python 3.12: older
+# yarl, PyYAML and setuptools don't build or run there, and older Flask breaks
+# against Werkzeug 3. No caps, so new releases are picked up as they come.
 dependencies = [
-  "flask",
-  "yarl",
-  "pyyaml",
+  "flask>=2.3.3",
+  "yarl>=1.9.1",
+  "pyyaml>=6.0.1",
 ]
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=66.1"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
