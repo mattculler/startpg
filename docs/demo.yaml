@@ -52,6 +52,9 @@ Networking:
   Access point:
     services:
       - url: http://192.0.2.3
+  Bridge:
+    services:
+      - url: ssh://192.0.2.4:22
 
 Smart home:
   Home Assistant:

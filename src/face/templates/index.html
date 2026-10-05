@@ -25,7 +25,7 @@
     {# Drive health from drivecanary: a drive coloured by its verdict, linking
        to the host's page there, with what needs attention in its tooltip. #}
     {% macro drives_badge(drives) -%}
-      <a class="drives drives-{{ drives.level }}" href="{{ drives.url }}" target="_blank" title="{{ drives.summary }}" aria-label="drive health: {{ drives.status }}"><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="1" width="14" height="10" rx="2"/><path d="M1.5 7.5h13"/><circle cx="12" cy="9.3" r="0.9"/></svg></a>
+      <a class="drives drives-{{ drives.level }}" href="{{ drives.url }}" target="_blank" title="{{ drives.summary }}" aria-label="drive health: {{ drives.status }}"><svg viewBox="0 0 12 14" aria-hidden="true"><ellipse cx="6" cy="3.2" rx="4.8" ry="2.2"/><path d="M1.2 3.2v7.6c0 1.2 2.15 2.2 4.8 2.2s4.8-1 4.8-2.2V3.2"/></svg></a>
     {%- endmacro %}
 
     {# The URL as a link, its scheme dimmed and the trailing slash dropped. #}
@@ -59,16 +59,19 @@
       <div class="grouphosts">
         {% for host_name_display, host in group.hosts.items() %}
           {% set host_key = group_name ~ "/" ~ host_name_display %}
-          <div class="machine{% if host_key in collapsed_hosts %} collapsed{% endif %}"
+          {# The host's own services, then any named ones under their name,
+             given once: an IPMI port's, say. A host with nothing but badges
+             has nothing under its name, so nothing to collapse. #}
+          {% set own, named = host.sections[0], host.sections[1:] %}
+          {% set leaf = not own.links and not named %}
+          <div class="machine{% if leaf %} leaf{% elif host_key in collapsed_hosts %} collapsed{% endif %}"
                data-host="{{ host_key }}">
-            {# The host's own services, then any named ones under their name,
-               given once: an IPMI port's, say. #}
-            {% set own, named = host.sections[0], host.sections[1:] %}
             <div class="machinetitle">
               <span class="machinename">{{ host_name_display }}</span>
               {% for service in own.ssh %}{{ ssh_badge(service) }}{% endfor %}
               {% if host.drives %}{{ drives_badge(host.drives) }}{% endif %}
             </div>
+            {% if not leaf %}
             <div class="services">
               {% for service in own.links %}{{ link(service) }}{% endfor %}
               {% for section in named %}
@@ -81,6 +84,7 @@
                 </div>
               {% endfor %}
             </div>
+            {% endif %}
           </div>
         {% endfor %}
       </div>

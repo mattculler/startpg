@@ -230,11 +230,26 @@ body {
   transform: rotate(-45deg);
 }
 
+/* Collapsing hides what's under the name; the title line's badges stay. */
 .machinegroup.collapsed .grouphosts,
-.machine.collapsed .machinetitle .ssh,
-.machine.collapsed .machinetitle .drives,
 .machine.collapsed .services {
   display: none;
+}
+
+/* A host with nothing under its name has nothing to collapse: no pointer,
+ * and a dash where the chevron would be. */
+.machine.leaf .machinename {
+  cursor: default;
+}
+
+.machine.leaf .machinename::before {
+  /* The chevron's box, border and all (only hidden), so the name lines up
+   * with the chevroned ones at any pixel density. */
+  width: 0.44em;
+  height: 0;
+  margin: 0 0.62em 0 0.02em;
+  border-right-color: transparent;
+  transform: translateY(-0.3em);
 }
 
 .services {
@@ -398,8 +413,8 @@ body {
   box-shadow: inset 0 0 0 1.5px currentColor;
 }
 
-/* Drive health from drivecanary: a drive in a chip coloured by its verdict,
- * linking to the host's page there. */
+/* Drive health from drivecanary: a cylinder in a chip coloured by its
+ * verdict, linking to the host's page there. */
 .drives {
   display: inline-flex;
   align-items: center;
@@ -411,16 +426,11 @@ body {
 }
 
 .drives svg {
-  width: 15px;
-  height: 11px;
+  width: 9px;
+  height: 10.5px;  /* makes the chip as tall as an SSH chip */
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.4;
-}
-
-.drives svg circle {
-  fill: currentColor;
-  stroke: none;
+  stroke-width: 1.3;
 }
 
 .drives:focus-visible {

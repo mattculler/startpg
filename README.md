@@ -133,8 +133,10 @@ on tmpfs and is rebuilt by hiney each cycle, so it's fine to lose on reboot.
 Persistent UI collapse
 ----------------------
 
-Clicking a group or host name collapses it. That state is persisted server-side
-in `/var/lib/startpg/collapsed.json` (via `StateDirectory=startpg`) and rendered
+Clicking a group or host name collapses it, leaving the host's badges showing.
+A host with nothing under its name has a dash in place of the chevron, and
+doesn't collapse. The collapsed state is persisted server-side in
+`/var/lib/startpg/collapsed.json` (via `StateDirectory=startpg`) and rendered
 into the HTML, so it survives reloads and reboots, applies across every browser
 and device, and never flashes open on load. It's global rather than per-user,
 which suits a single-user homepage.

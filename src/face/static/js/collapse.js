@@ -1,4 +1,5 @@
-// Collapse groups and hosts by clicking their name.
+// Collapse groups and hosts by clicking their name. A host with nothing under
+// its name (a "leaf") has nothing to collapse, so its name isn't wired.
 //
 // The collapsed state is rendered server-side (so nothing flashes open on
 // load) and posted back here, which means it survives reloads, reboots, and
@@ -26,5 +27,5 @@
   }
 
   wire(".machinegroupname", ".machinegroup", "group", "group");
-  wire(".machinename", ".machine", "host", "host");
+  wire(".machine:not(.leaf) .machinename", ".machine", "host", "host");
 })();
