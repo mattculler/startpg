@@ -57,3 +57,8 @@ Smart home:
   Home Assistant:
     services:
       - url: http://192.0.2.40:8123
+
+# Drive health from a drivecanary hub, on the hosts it watches. The
+# screenshot makes up what it reports.
+_drivecanary:
+  url: http://192.0.2.50:8080

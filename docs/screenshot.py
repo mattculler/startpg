@@ -58,6 +58,12 @@ STATUS = {
     "http://192.0.2.40:8123/": UP,
 }
 
+# Made-up drive health from drivecanary, by hostname: its verdict and why.
+DRIVES = {
+    "nas": ("ok", []),
+    "pve": ("warn", ["/dev/sdb: 8 reallocated sectors"]),
+}
+
 
 def render(html_dir: Path) -> None:
     """Write face's page for the demo, and its static files, to html_dir."""
@@ -71,16 +77,21 @@ def render(html_dir: Path) -> None:
     load_config = torso.load_config
     torso.load_config = lambda config_file=DEMO: load_config(config_file)
     import face.face as face
+    from torso import DriveHealth
 
     for group in face.conf.values():
         for host in group.hosts.values():
+            if host.hostname in DRIVES:
+                status, problems = DRIVES[host.hostname]
+                url = f"http://192.0.2.50:8080/host/{host.hostname}"
+                host.drives = DriveHealth(host.hostname, status, problems, url)
             for service in host.services:
                 if service.check:
                     url = service.url.human_repr()
                     if url not in STATUS:
                         sys.exit(f"screenshot: no made-up status for {url}")
                     service.last_check_status, service.last_check_info = STATUS[url]
-    face._reader = lambda: None  # no status DB, so the made-up statuses stand
+    face._reader = lambda: None  # no status DB, so the made-up results stand
 
     html = face.app.test_client().get("/").get_data(as_text=True)
     (html_dir / "index.html").write_text(html)
