@@ -19,6 +19,13 @@ def _auto_hostname(host_display_name: str, host):
         host["hostname"] = _to_hostname(host_display_name)
         LOG.info(f"    Set hostname to '{host['hostname']}', from display name")
 
+def load_settings(config_file: Path = DEFAULT_CONFIG) -> dict[str, Any]:
+    """The config's settings rather than its groups: its top-level blocks
+    named with a leading "_", like _drivecanary, keyed without the "_"."""
+    with config_file.open() as f:
+        root_conf = yaml.safe_load(f) or {}
+    return {k[1:]: v for k, v in root_conf.items() if k.startswith("_")}
+
 def load_config(config_file: Path = DEFAULT_CONFIG) -> Config:
     if not config_file.exists():
         raise FileNotFoundError(

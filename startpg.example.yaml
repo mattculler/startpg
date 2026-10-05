@@ -37,3 +37,8 @@ _dhcp:
   router: 192.0.2.1
   # The first run of hands prints the router's cert fingerprint to pin here:
   # cert_sha256: ...
+
+# Optional: drive health from a drivecanary hub, shown on the hosts it watches
+# (matched by hostname). Leave it out if you don't run one.
+# _drivecanary:
+#   url: http://192.0.2.50:8080

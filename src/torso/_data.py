@@ -70,11 +70,32 @@ class Section:
     ssh: list[Service] = field(default_factory=list)
     links: list[Service] = field(default_factory=list)
 
+# How the page colours drivecanary's verdicts: anything not listed is unknown.
+DRIVE_LEVELS = {"ok": "ok", "warn": "warn", "error": "warn", "stale": "warn", "fail": "fail"}
+
+@dataclass
+class DriveHealth:
+    """A host's drive health, as a drivecanary hub reports it."""
+    host: str  # the hub's name for the host, which matches its hostname here
+    status: str  # its worst verdict: ok, warn, fail, error, stale, unknown, paused
+    problems: list[str]  # what needs attention, one line each
+    url: str  # the host's page on the hub
+
+    @property
+    def level(self) -> str:
+        """ok, warn, fail or unknown: how the page colours it."""
+        return DRIVE_LEVELS.get(self.status, "unknown")
+
+    @property
+    def summary(self) -> str:
+        return "\n".join([f"drives: {self.status}", *self.problems])
+
 @dataclass 
 class Host:
     name: str
     hostname: str | None
     services: list[Service] = field(default_factory=list)
+    drives: DriveHealth | None = None  # from drivecanary, if it watches this host
 
     @property
     def sections(self) -> list[Section]:

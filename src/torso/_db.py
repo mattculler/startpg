@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum, auto
 import logging
 
-from torso import util, Config, Host, Service
+from torso import util, Config, DriveHealth, Host, Service
 
 LOG = logging.getLogger(__file__)
 
@@ -93,6 +93,36 @@ class Db:
         ).fetchall()
         return {row["url"]: row for row in rows}
 
+    def replace_drives(self, drives: list[DriveHealth]) -> None:
+        """Make the Drives table exactly these, in one go so that a reader
+        never sees it half written."""
+        self._db.execute("BEGIN")
+        try:
+            self._db.execute("DELETE FROM Drives")
+            self._db.executemany(
+                "INSERT INTO Drives (host, status, problems, url) VALUES (?, ?, ?, ?)",
+                [(d.host, d.status, "\n".join(d.problems), d.url) for d in drives],
+            )
+        except BaseException:
+            self._db.execute("ROLLBACK")
+            raise
+        self._db.execute("COMMIT")
+
+    def mark_drives_unknown(self, why: str) -> None:
+        """Keep the hosts last heard of, but with their health unknown, and why."""
+        self._db.execute("UPDATE Drives SET status = 'unknown', problems = ?", (why,))
+
+    def get_drives(self) -> dict[str, DriveHealth]:
+        """Drive health by host name, lowercased."""
+        try:
+            rows = self._db.execute("SELECT host, status, problems, url FROM Drives").fetchall()
+        except sqlite3.OperationalError:
+            return {}  # a DB from before the Drives table, until hiney next runs
+        return {
+            host.lower(): DriveHealth(host, status, problems.splitlines(), url)
+            for host, status, problems, url in rows
+        }
+
     def update_config(self, config: Config) -> None:
         """Overlay the latest check results from the DB onto the config."""
         by_url = self.get_status_by_url()
@@ -104,6 +134,12 @@ class Db:
             service.last_check_time = datetime.fromisoformat(ts) if ts else None
             service.last_check_status = row["last_check_status"]
             service.last_check_info = row["last_check_info"]
+
+        # Drive health goes on the host drivecanary knows by its hostname.
+        drives = self.get_drives()
+        for group in config.values():
+            for host in group.hosts.values():
+                host.drives = drives.get((host.hostname or "").lower())
 
     @classmethod
     def writer(cls) -> "Db":

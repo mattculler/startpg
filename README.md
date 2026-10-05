@@ -139,6 +139,24 @@ into the HTML, so it survives reloads and reboots, applies across every browser
 and device, and never flashes open on load. It's global rather than per-user,
 which suits a single-user homepage.
 
+Drive health (drivecanary)
+--------------------------
+
+If you run a drivecanary hub, startpg can show the drive health of each host it
+watches, as a drive icon on the host's card: green when all is well, amber for a
+warning, red for a failure, and grey when it can't tell. Hover over it for what
+needs attention, or click it for the host's page on the hub. To turn it on, add
+the hub to your config:
+
+```yaml
+_drivecanary:
+  url: http://192.168.1.50:8080
+```
+
+Each sweep, hiney reads the hub's `/api/v1/hosts` and matches its hosts to yours
+by `hostname:`. Without the block, startpg contacts nothing and shows no drive
+icons.
+
 Syncing with DHCP reservations (`hands`)
 ----------------------------------------
 
